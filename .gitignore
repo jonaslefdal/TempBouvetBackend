@@ -483,7 +483,6 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-
 /database
 /keys.txt
 /build.sh
