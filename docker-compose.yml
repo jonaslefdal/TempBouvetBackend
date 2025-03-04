@@ -1,0 +1,27 @@
+services:
+  api:
+    container_name: backend-api
+    build: .
+    ports:
+      - "5279:5279"
+    depends_on:
+      - postgres
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=bouvetdb;Username=admin;Password=admin
+
+  postgres:
+    container_name: postgres-db
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: bouvetdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
