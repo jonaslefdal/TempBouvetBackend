@@ -12,8 +12,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
         builder => builder
-            .WithOrigins("http://localhost:3000") 
-            .WithOrigins("https://github.com/jonaslefdal/BouvetApp/") 
+            .WithOrigins("http://localhost:3000", "https://yourfrontend.azurewebsites.net") 
             .AllowAnyMethod()
             .AllowAnyHeader());
             // .AllowCredentials(); 
@@ -35,10 +34,11 @@ builder.Services.AddCors(options =>
     builder.Services.AddScoped<IWeeklyChallengeRepository, EfWeeklyChallengeRepository>();
     builder.Services.AddScoped<ITeamRepository, EfTeamRepository>();
 
-    builder.WebHost.ConfigureKestrel(options =>
+    //For dev only
+    /*builder.WebHost.ConfigureKestrel(options =>
     {
         options.ListenAnyIP(5279);
-    });
+    });*/
 
     var azureAdB2CConfig = builder.Configuration.GetSection("AzureAdB2C");
 
