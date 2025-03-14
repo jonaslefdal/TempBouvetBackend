@@ -488,8 +488,6 @@ $RECYCLE.BIN/
 /build.sh
 controllers/PushNotiController.cs
 controllers/testpushService.cs
-controllers/UserController.cs
 models/PushSubscriptionModel.cs
-models/UserModel.cs
 appsettings*.json
 Properties/launchSettings.json
