@@ -12,7 +12,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
         builder => builder
-            .WithOrigins("http://localhost:3000", "https://yourfrontend.azurewebsites.net") 
+            .WithOrigins("http://localhost:3000", "https://jonaslefdal.github.io/") 
             .AllowAnyMethod()
             .AllowAnyHeader());
             // .AllowCredentials(); 
