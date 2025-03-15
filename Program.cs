@@ -15,7 +15,7 @@ builder.Services.AddCors(options =>
             .WithOrigins("http://localhost:3000", "https://jonaslefdal.github.io/", "https://jonaslefdal.github.io/BouvetApp") 
             .AllowAnyMethod()
             .AllowAnyHeader());
-            // .AllowCredentials(); 
+            .AllowCredentials(); 
 });
 
 
