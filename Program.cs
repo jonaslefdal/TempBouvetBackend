@@ -33,13 +33,12 @@ builder.Services.AddCors(options =>
     builder.Services.AddScoped<ICompanyRepository, EfCompanyRepository>();
     builder.Services.AddScoped<IWeeklyChallengeRepository, EfWeeklyChallengeRepository>();
     builder.Services.AddScoped<ITeamRepository, EfTeamRepository>();
-
-    //For dev only
-    /*builder.WebHost.ConfigureKestrel(options =>
+/*
+    builder.WebHost.ConfigureKestrel(options =>
     {
         options.ListenAnyIP(5279);
-    });*/
-
+    });
+*/
     var azureAdB2CConfig = builder.Configuration.GetSection("AzureAdB2C");
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -89,8 +88,8 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<DataContext>();
-        context.Database.EnsureDeleted();  
-        context.Database.EnsureCreated();  
+                context.Database.Migrate();  
+
     }
     catch (Exception ex)
     {
