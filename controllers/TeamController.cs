@@ -131,7 +131,8 @@ namespace BouvetBackend.Controllers
             {
                 TeamId = team.TeamId,
                 Name = team.Name,
-                Members = team.Users.Select(u => new { u.UserId, u.Name, u.Email }).ToList()
+                TeamTotalScore = team.Users.Sum(u => u.TotalScore),
+                Members = team.Users.Select(u => new { u.UserId, u.Name, u.Email, u.TotalScore }).ToList()
             };
 
             return Ok(teamModel);
@@ -156,6 +157,27 @@ namespace BouvetBackend.Controllers
 
             return Ok(new { message = "You have left the team." });
         }
+
+            [HttpGet("allTeams")]
+            public IActionResult GetAllTeams()
+            {
+                var teams = _teamRepository.GetAll();
+                
+                if (teams == null || teams.Count == 0)
+                {
+                    return NotFound("No teams found.");
+                }
+
+                var leaderboard = teams.Select(team => new
+                {
+                    TeamId = team.TeamId,
+                    Name = team.Name,
+                    TeamTotalScore = team.Users.Sum(user => user.TotalScore),
+                }).ToList();
+
+                return Ok(leaderboard);
+            }
+
 
 
     }
