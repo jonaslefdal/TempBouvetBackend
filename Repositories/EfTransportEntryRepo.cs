@@ -14,37 +14,46 @@ namespace BouvetBackend.Repositories
             _context = context;
         }
 
-       public void Upsert(TransportEntry transportEntry)
-{
-    // Retrieve the associated user
-    var user = _context.Users.FirstOrDefault(u => u.UserId == transportEntry.UserId);
-    if (user == null)
-    {
-        throw new Exception("User not found.");
-    }
+        public void Upsert(TransportEntry transportEntry)
+        {
+            // Retrieve the associated user
+            var user = _context.Users.FirstOrDefault(u => u.UserId == transportEntry.UserId);
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
 
-    var existing = _context.TransportEntry
-        .FirstOrDefault(a => a.TransportEntryId == transportEntry.TransportEntryId);
+            var existing = _context.TransportEntry
+                .FirstOrDefault(a => a.TransportEntryId == transportEntry.TransportEntryId);
 
-    if (existing != null)
-    {
-        int pointDifference = transportEntry.Points - existing.Points;
+            if (existing != null)
+            {
+                int pointDifference = transportEntry.Points - existing.Points;
 
-        existing.Method = transportEntry.Method;
-        existing.Points = transportEntry.Points;
-        existing.CreatedAt = transportEntry.CreatedAt;
-        
-        user.TotalScore += pointDifference;
-    }
-    else
-    {
-        _context.TransportEntry.Add(transportEntry);
-        user.TotalScore += transportEntry.Points;
-    }
+                existing.Method = transportEntry.Method;
+                existing.Points = transportEntry.Points;
+                existing.Co2 = transportEntry.Co2;
+                existing.DistanceKm = transportEntry.DistanceKm;
+                existing.CreatedAt = transportEntry.CreatedAt;
+                
+                user.TotalScore += pointDifference;
+            }
+            else
+            {
+                _context.TransportEntry.Add(transportEntry);
+                user.TotalScore += transportEntry.Points;
+            }
 
-    _context.SaveChanges();
-}
+            _context.SaveChanges();
+        }
 
+
+        public double GetTotalCo2SavingsByUser(int userId)
+        {
+            return _context.TransportEntry
+                .Where(te => te.UserId == userId)
+                .Sum(te => te.Co2);
+        }
 
         public TransportEntry Get(int TransportEntryId)
         {
@@ -54,6 +63,11 @@ namespace BouvetBackend.Repositories
         public List<TransportEntry> GetAll()
         {
             return _context.TransportEntry.ToList();
+        }
+
+        public int GetTotalTravelCountByUser(int userId)
+        {
+            return _context.TransportEntry.Count(te => te.UserId == userId);
         }
     }
 }

@@ -104,7 +104,7 @@ namespace BouvetBackend.Controllers
 
             // Update the user's team
             user.TeamId = model.TeamId;
-            _userRepository.InsertOrUpdateUser(user);  // Or use Upsert method as implemented
+            _userRepository.InsertOrUpdateUser(user);  
 
             return Ok(new { message = "Joined team successfully." });
         }
@@ -161,7 +161,7 @@ namespace BouvetBackend.Controllers
             [HttpGet("allTeams")]
             public IActionResult GetAllTeams()
             {
-                var teams = _teamRepository.GetAll();
+                var teams = _teamRepository.GetAll(); // Fetch all teams
                 
                 if (teams == null || teams.Count == 0)
                 {

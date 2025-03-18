@@ -26,7 +26,9 @@ namespace BouvetBackend.Models.TransportEntryModel
         public int UserId { get; set; }
         public string ?Email { get; set; } 
         public string ?Method { get; set; }  
-        public int Points { get; set; }     
+        public double Co2 { get; set; }  
+        public double DistanceKm { get; set; }  
+        public string? StartingAddress { get; set; }     
     }
 }
 

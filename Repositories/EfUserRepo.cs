@@ -29,6 +29,8 @@ namespace BouvetBackend.Repositories
             var existing = _context.Users.FirstOrDefault(u => u.Email == user.Email);
             if (existing != null)
             {
+                existing.AzureId = user.AzureId;
+                existing.Email = user.Email;
                 existing.Name = user.Name;
             }
             else

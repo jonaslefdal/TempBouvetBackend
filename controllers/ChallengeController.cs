@@ -17,18 +17,14 @@ namespace BouvetBackend.Controllers
         private readonly IChallengeRepository _challengeRepository;
         private readonly IUserChallengeAttemptRepository _challengeAttemptRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IWeeklyChallengeRepository _weeklyChallengeRepository;
-
 
         public ChallengeController(IChallengeRepository challengeRepository,
                                    IUserChallengeAttemptRepository challengeAttemptRepository,
-                                   IUserRepository userRepository,
-                                   IWeeklyChallengeRepository weeklyChallengeRepository)
+                                   IUserRepository userRepository)
         {
             _challengeRepository = challengeRepository;
             _challengeAttemptRepository = challengeAttemptRepository;
             _userRepository = userRepository;
-            _weeklyChallengeRepository = weeklyChallengeRepository;
 
         }
 
@@ -61,8 +57,6 @@ namespace BouvetBackend.Controllers
             return Ok(challenges);
         }
 
-
-
         // GET: api/challenge/user
         [HttpGet("user")]
         public IActionResult GetUserChallenges() 
@@ -94,63 +88,59 @@ namespace BouvetBackend.Controllers
             return Ok(grouped);
         }
 
-    // POST: api/challenge/complete
-    [HttpPost("complete")]
-    public IActionResult CompleteChallenge([FromBody] CompleteChallengeRequest request)
-    {
-        if (request == null)
+        // POST: api/challenge/complete
+        [HttpPost("complete")]
+        public IActionResult CompleteChallenge([FromBody] CompleteChallengeRequest request)
         {
-            return BadRequest("Invalid data.");
+            if (request == null)
+            {
+                return BadRequest("Invalid data.");
+            }
+
+            var user = _userRepository.GetUserByEmail(request.Email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var challenge = _challengeRepository.Get(request.ChallengeId);
+            if (challenge == null)
+            {
+                return NotFound("Challenge not found.");
+            }
+
+            // Get current attempt count for this challenge.
+            var attemptCount = _challengeAttemptRepository
+                .GetAttemptsByUserForChallenge(user.UserId, challenge.ChallengeId)
+                .Count;
+
+            if (attemptCount >= challenge.MaxAttempts)
+            {
+                return BadRequest("Maximum attempts reached for this challenge.");
+            }
+
+            // Determine if this is the final attempt.
+            bool isFinalAttempt = (attemptCount + 1 == challenge.MaxAttempts);
+
+            // Create a new challenge attempt with points based on final attempt status.
+            var attempt = new UserChallengeAttempt
+            {
+                UserId = user.UserId,
+                ChallengeId = challenge.ChallengeId,
+                PointsAwarded = isFinalAttempt ? challenge.Points : 0,
+                AttemptedAt = DateTime.UtcNow
+            };
+
+            // Repository will update the user's TotalScore.
+            _challengeAttemptRepository.Upsert(attempt);
+
+            return Ok(new
+            {
+                message = isFinalAttempt
+                    ? "Challenge fully completed! Points awarded."
+                    : null,
+                attemptId = attempt.UserChallengeAttemptId
+            });
         }
-
-        var user = _userRepository.GetUserByEmail(request.Email);
-        if (user == null)
-        {
-            return NotFound("User not found.");
-        }
-
-        var challenge = _challengeRepository.Get(request.ChallengeId);
-        if (challenge == null)
-        {
-            return NotFound("Challenge not found.");
-        }
-
-        // Get current attempt count for this challenge.
-        var attemptCount = _challengeAttemptRepository
-            .GetAttemptsByUserForChallenge(user.UserId, challenge.ChallengeId)
-            .Count;
-
-        if (attemptCount >= challenge.MaxAttempts)
-        {
-            return BadRequest("Maximum attempts reached for this challenge.");
-        }
-
-        // Determine if this is the final attempt.
-        bool isFinalAttempt = (attemptCount + 1 == challenge.MaxAttempts);
-
-        // Create a new challenge attempt with points based on final attempt status.
-        var attempt = new UserChallengeAttempt
-        {
-            UserId = user.UserId,
-            ChallengeId = challenge.ChallengeId,
-            PointsAwarded = isFinalAttempt ? challenge.Points : 0,
-            AttemptedAt = DateTime.UtcNow
-        };
-
-        // Repository will update the user's TotalScore.
-        _challengeAttemptRepository.Upsert(attempt);
-
-        return Ok(new
-        {
-            message = isFinalAttempt
-                ? "Challenge fully completed! Points awarded."
-                : null,
-            attemptId = attempt.UserChallengeAttemptId
-        });
-    }
-
-
-
-
     }
 }

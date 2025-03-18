@@ -24,3 +24,7 @@ VALUES
   ('Climb stairs for 10 minutes', 80, 2, 8, CURRENT_TIMESTAMP),
   ('Dance for 15 minutes', 70, 3, 9, CURRENT_TIMESTAMP),
   ('Meditation practice', 60, 3, 10, CURRENT_TIMESTAMP);
+
+INSERT INTO achievement ("Name", "ConditionType", "Threshold")
+VALUES ('Cycling Champion', 'cycling_count', 10),
+      ('Walking Warrior', 'walking_weekly', 5);

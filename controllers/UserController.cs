@@ -27,12 +27,13 @@ namespace BouvetBackend.Controllers
             {
                 return BadRequest("Invalid user data.");
             }
-            var token = Request.Headers["Authorization"].ToString();
-                Console.WriteLine($"Received token: {token}");
 
-            var azureId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? userModel.AzureId;
-            var email = User.FindFirst(ClaimTypes.Email)?.Value ?? userModel.Email;
-            var name = User.FindFirst("name")?.Value ?? userModel.Name;
+            var azureId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var email = User.FindFirst("emails")?.Value; 
+            var givenName = User.FindFirst(ClaimTypes.GivenName)?.Value;    
+            var lastName = User.FindFirst(ClaimTypes.Surname)?.Value;    
+
+            var name = $"{givenName} {lastName}".Trim();
 
             if (string.IsNullOrEmpty(azureId) || string.IsNullOrEmpty(email))
             {
@@ -44,8 +45,7 @@ namespace BouvetBackend.Controllers
                 AzureId = azureId,
                 Email = email,
                 Name = name,
-                CompanyId = userModel.CompanyId,
-                TotalScore = userModel.TotalScore
+                TotalScore = 0
             };
 
             _userRepository.InsertOrUpdateUser(entity);
@@ -62,18 +62,13 @@ namespace BouvetBackend.Controllers
             {
                 return NotFound("No users found.");
             }
-
-            var leaderboard = new List<object>();
-            foreach (var user in users)
+            
+            var leaderboard = users.Select(user => new
             {
-                leaderboard.Add(new
-                {
-                    user.UserId,
-                    user.Name,
-                    user.Email,
-                    user.TotalScore 
-                });
-            }
+                user.UserId,
+                user.Name,
+                user.TotalScore
+            }).ToList(); 
 
             return Ok(leaderboard);
         }

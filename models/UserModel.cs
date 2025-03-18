@@ -27,6 +27,8 @@ namespace BouvetBackend.Models.UserModel
         public string? AzureId { get; set; } 
         public string? Name { get; set; }
         public string? Email { get; set; }
+        public string? NickName { get; set; }
+        public string? Address { get; set; }
         public int CompanyId { get; set; }
         public int TotalScore { get; set; }
         public int? TeamId { get; set; }

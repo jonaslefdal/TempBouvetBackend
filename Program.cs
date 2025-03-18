@@ -4,6 +4,7 @@ using BouvetBackend.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
+using BouvetBackend.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,6 @@ builder.Services.AddCors(options =>
             .AllowCredentials()); 
 });
 
-
     builder.Services.AddControllers();
     builder.Services.AddOpenApi();
 
@@ -31,8 +31,11 @@ builder.Services.AddCors(options =>
     builder.Services.AddScoped<IUserChallengeAttemptRepository, EfUserChallengeAttemptRepository>();
     builder.Services.AddScoped<ITransportEntryRepository, EfTransportEntryRepository>();
     builder.Services.AddScoped<ICompanyRepository, EfCompanyRepository>();
-    builder.Services.AddScoped<IWeeklyChallengeRepository, EfWeeklyChallengeRepository>();
     builder.Services.AddScoped<ITeamRepository, EfTeamRepository>();
+    builder.Services.AddScoped<IAchievementRepository, EfAchievementRepository>();
+    builder.Services.AddHttpClient<IGeocodingService, GeocodingService>();
+    builder.Services.AddHttpClient<IDistanceService, DistanceService>();
+
 /*
     builder.WebHost.ConfigureKestrel(options =>
     {
@@ -63,7 +66,7 @@ builder.Services.AddCors(options =>
                 ValidateIssuerSigningKey = true
             };
 
-            options.Events = new JwtBearerEvents
+           /* options.Events = new JwtBearerEvents
             {
                 OnAuthenticationFailed = context =>
                 {
@@ -75,39 +78,45 @@ builder.Services.AddCors(options =>
                     Console.WriteLine("Token successfully validated.");
                     return Task.CompletedTask;
                 }
-            };
+            };*/
         });
 
     builder.Services.AddAuthorization();
 
-var app = builder.Build();
+    var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        var context = services.GetRequiredService<DataContext>();
-                context.Database.Migrate();  
+        var services = scope.ServiceProvider;
+        try
+        {
+            var context = services.GetRequiredService<DataContext>();
+            context.Database.Migrate();  
+            //context.Database.EnsureDeleted();  
+            //context.Database.EnsureCreated();  
 
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Database migration/seeding error: " + ex.Message);
+        }
     }
-    catch (Exception ex)
+
+    app.UseRouting();
+    app.UseCors("AllowFrontend");
+    app.UseAuthentication(); 
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    if (app.Environment.IsDevelopment())
     {
-        Console.WriteLine("Database migration/seeding error: " + ex.Message);
+        app.MapOpenApi();
+        app.UseSwaggerUi(options =>
+        {
+            options.DocumentPath = "openapi/v1.json";
+        });
     }
-}
 
-app.UseRouting();
-app.UseCors("AllowFrontend");
-app.UseAuthentication(); 
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.MapOpenApi();
-app.UseSwaggerUi(options =>
-{
-    options.DocumentPath = "openapi/v1.json";
-});
 
 app.Run();

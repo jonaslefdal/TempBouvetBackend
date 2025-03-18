@@ -15,11 +15,13 @@ namespace BouvetBackend.Controllers
     {
         private readonly ICompanyRepository _companyRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ITransportEntryRepository _transportEntryRepository;
 
-        public ProfileController(ICompanyRepository companyRepository,IUserRepository userRepository)
+        public ProfileController(ICompanyRepository companyRepository,IUserRepository userRepository, ITransportEntryRepository transportEntryRepository)
         {
             _companyRepository = companyRepository;
             _userRepository = userRepository;
+            _transportEntryRepository = transportEntryRepository;
         }
 
         [HttpGet("allComp")]
@@ -38,7 +40,7 @@ namespace BouvetBackend.Controllers
         public IActionResult GetMyProfile()
         {
             // Assume the user's email is in the token
-                var email = User.FindFirst("emails")?.Value;
+            var email = User.FindFirst("emails")?.Value;
 
             if (string.IsNullOrEmpty(email))
             {
@@ -57,23 +59,67 @@ namespace BouvetBackend.Controllers
         [HttpPut("companySet")]
         public IActionResult SetUserCompany([FromBody] UserModel userModel)
         {
-            if (userModel == null || string.IsNullOrEmpty(userModel.Email))
+            if (userModel == null)
             {
                 return BadRequest("Invalid request data.");
             }
-            var user = _userRepository.GetUserByEmail(userModel.Email);
+            
+            var email = User.FindFirst("emails")?.Value;
+            if (string.IsNullOrEmpty(email))
+                return BadRequest("Email claim missing.");
+
+            var user = _userRepository.GetUserByEmail(email);
             if (user == null)
-            {
                 return NotFound("User not found.");
-            }
 
             // Update the user's company
             user.CompanyId = userModel.CompanyId;
+            user.NickName = userModel.NickName; 
+            user.Address = userModel.Address;
+
             _userRepository.InsertOrUpdateUser(user);
 
             return Ok(new { message = "User company updated successfully." });
         }
 
+        [HttpGet("totalCo2")]
+        public IActionResult GetTotalCo2Savings()
+        {
+            var email = User.FindFirst("emails")?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Email claim missing.");
+            }
 
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            double totalCo2Savings = _transportEntryRepository.GetTotalCo2SavingsByUser(user.UserId);
+
+            return Ok(new { totalCo2Savings });
+        }
+
+        [HttpGet("totalTravels")]
+        public IActionResult GetTotalTravels()
+        {
+            var email = User.FindFirst("emails")?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Email claim missing.");
+            }
+
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+        int totalTravels = _transportEntryRepository.GetTotalTravelCountByUser(user.UserId);
+
+        return Ok(new { totalTravels });
+        }
     }
 }

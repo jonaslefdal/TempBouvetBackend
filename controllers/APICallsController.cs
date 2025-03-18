@@ -4,12 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using BouvetBackend.Models.ApiModel;
 using BouvetBackend.Entities;
 using BouvetBackend.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace BouvetBackend.Controllers 
 {
 [Route("api/[controller]")]
 [ApiController]
+[Authorize] // Require authentication
 public class ApiController : Controller
 {
     private readonly IApiRepository _apiRepository;

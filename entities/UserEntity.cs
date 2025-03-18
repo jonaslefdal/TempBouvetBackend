@@ -23,10 +23,14 @@ namespace BouvetBackend.Entities
 
         // Cached total score for performance
         public int TotalScore { get; set; } = 0;
+        public string? NickName { get; set; }
+        public string? Address { get; set; }
 
         [ForeignKey("Team")]
         public int? TeamId { get; set; }
         public virtual Teams? Team { get; set; }
         public virtual ICollection<TransportEntry> TransportEntry { get; set; } = new List<TransportEntry>();
+        public virtual ICollection<UserAchievement> UserAchievements { get; set; } = new List<UserAchievement>();
+
     }
 }
