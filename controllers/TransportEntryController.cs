@@ -71,6 +71,9 @@ namespace BouvetBackend.Controllers
 
             // Calculate points based on the distance.
             int calculatedPoints = CalculatePoints(distanceKm, model.Method ?? string.Empty);
+            
+            // Calculate saved Money based on the distance.
+            double calculatedMoney = CalculateMoneySaved(distanceKm, model.Method ?? string.Empty);
 
             var entity = new TransportEntry
             {
@@ -79,6 +82,7 @@ namespace BouvetBackend.Controllers
                 Points = calculatedPoints,
                 Co2 = co2utslipp,
                 DistanceKm = distanceKm,
+                MoneySaved = calculatedMoney,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -141,24 +145,24 @@ namespace BouvetBackend.Controllers
         return Math.Max(savedCo2, 0); // Ensure no negative values
         }
 
-        [HttpGet("test-geocode")]
-        public async Task<IActionResult> TestGeocode([FromQuery] string address)
+        private double CalculateMoneySaved(double distanceKm, string mode)
         {
-            if (string.IsNullOrEmpty(address))
+            var costPerKm = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
-                return BadRequest("Please provide an address.");
-            }
+                { "car", 5.00 },      // 5 kr per km (drivstoff, vedlikehold, verdifall)
+                { "bus", 1.19 },      // Basert på 711 kr/mnd og 600 km gjennomsnitt
+                { "cycling", 0.00 },  
+                { "walking", 0.00 }   
+            };
 
-            var coords = await _geocodingService.GetCoordinates(address);
-            if (coords == null)
-            {
-                return NotFound("Coordinates not found for the given address.");
-            }
+            double defaultCost = 5.00; // Standard kostnad (bil)
+            double selectedCost = costPerKm.GetValueOrDefault(mode, defaultCost);
 
-            Console.WriteLine($"Coordinates for '{address}': {coords[0]}, {coords[1]}");
-
-            return Ok(new { address, coordinates = coords });
+            // Beregn spart penger sammenlignet med bil
+            double savedMoney = (defaultCost - selectedCost) * distanceKm;
+            return Math.Max(savedMoney, 0);
         }
+
 
     }
 }

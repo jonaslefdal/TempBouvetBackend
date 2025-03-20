@@ -9,6 +9,7 @@ namespace BouvetBackend.Repositories
         List<TransportEntry> GetAll();
         double GetTotalCo2SavingsByUser(int userId);
         int GetTotalTravelCountByUser(int userId); 
+        double GetTotalMoneySaved(int userId); 
 
         
     }

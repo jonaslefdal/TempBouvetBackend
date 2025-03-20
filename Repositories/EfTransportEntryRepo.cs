@@ -54,6 +54,12 @@ namespace BouvetBackend.Repositories
                 .Where(te => te.UserId == userId)
                 .Sum(te => te.Co2);
         }
+        public double GetTotalMoneySaved(int userId)
+        {
+            return _context.TransportEntry
+                .Where(te => te.UserId == userId)
+                .Sum(te => te.MoneySaved);
+        }
 
         public TransportEntry Get(int TransportEntryId)
         {

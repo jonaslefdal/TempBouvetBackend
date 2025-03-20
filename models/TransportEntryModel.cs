@@ -28,6 +28,7 @@ namespace BouvetBackend.Models.TransportEntryModel
         public string ?Method { get; set; }  
         public double Co2 { get; set; }  
         public double DistanceKm { get; set; }  
+        public double MoneySaved { get; set; }
         public string? StartingAddress { get; set; }     
     }
 }

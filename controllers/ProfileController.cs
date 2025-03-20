@@ -121,5 +121,25 @@ namespace BouvetBackend.Controllers
 
         return Ok(new { totalTravels });
         }
+
+        [HttpGet("totalMoney")]
+        public IActionResult GetTotalMoney()
+        {
+            var email = User.FindFirst("emails")?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Email claim missing.");
+            }
+
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+        double totalMoneySaved = _transportEntryRepository.GetTotalMoneySaved(user.UserId);
+
+        return Ok(new { totalMoneySaved });
+        }
     }
 }
