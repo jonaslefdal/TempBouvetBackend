@@ -32,6 +32,7 @@ namespace BouvetBackend.Models.UserModel
         public int CompanyId { get; set; }
         public int TotalScore { get; set; }
         public int? TeamId { get; set; }
+        public string? ProfilePicture { get; set; }
     }
 
 }

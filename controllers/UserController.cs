@@ -5,6 +5,7 @@ using System.Security.Claims;
 using BouvetBackend.Models.UserModel;
 using BouvetBackend.Entities;
 using BouvetBackend.Repositories;
+using System.Text.RegularExpressions;
 
 namespace BouvetBackend.Controllers 
 {
@@ -65,8 +66,16 @@ namespace BouvetBackend.Controllers
             if (user == null)
                 return NotFound("User not found.");
 
+            if (!string.IsNullOrEmpty(model.ProfilePicture) &&
+                !Regex.IsMatch(model.ProfilePicture, @"^avatar\d+\.png$", RegexOptions.IgnoreCase))
+            {
+                return BadRequest("Ugyldig profilbilde.");
+            }
+
+
             // Update nickname on the existing user
             user.NickName = model.NickName;
+            user.ProfilePicture = model.ProfilePicture;
 
             _userRepository.UpdateUserProfile(user);
 

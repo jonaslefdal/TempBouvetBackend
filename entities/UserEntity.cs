@@ -28,6 +28,7 @@ namespace BouvetBackend.Entities
 
         [ForeignKey("Team")]
         public int? TeamId { get; set; }
+        public string? ProfilePicture { get; set; }
         public virtual Teams? Team { get; set; }
         public virtual ICollection<TransportEntry> TransportEntry { get; set; } = new List<TransportEntry>();
         public virtual ICollection<UserAchievement> UserAchievements { get; set; } = new List<UserAchievement>();
