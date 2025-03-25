@@ -95,7 +95,7 @@ namespace BouvetBackend.Controllers
             var leaderboard = users.Select(user => new
             {
                 user.UserId,
-                user.Name,
+                user.NickName,
                 user.TotalScore
             }).ToList(); 
 

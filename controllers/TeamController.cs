@@ -132,7 +132,7 @@ namespace BouvetBackend.Controllers
                 TeamId = team.TeamId,
                 Name = team.Name,
                 TeamTotalScore = team.Users.Sum(u => u.TotalScore),
-                Members = team.Users.Select(u => new { u.UserId, u.Name, u.TotalScore, u.ProfilePicture }).ToList()
+                Members = team.Users.Select(u => new { u.UserId, u.NickName, u.TotalScore, u.ProfilePicture }).ToList()
             };
 
             return Ok(teamModel);
