@@ -13,7 +13,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
         builder => builder
-            .WithOrigins("http://localhost:3000", "https://jonaslefdal.github.io", "https://jonaslefdal.github.io/", "https://jonaslefdal.github.io/BouvetApp", "https://jonaslefdal.github.io/BouvetApp/") 
+            .WithOrigins("http://localhost:3000", "https://jonaslefdal.github.io", "https://jonaslefdal.github.io/", "https://jonaslefdal.github.io/BouvetApp", "https://jonaslefdal.github.io/BouvetApp/, https://vickynygaard.github.io/Kortreist, https://vickynygaard.github.io/Kortreist/") 
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials()); 
