@@ -53,6 +53,26 @@ namespace BouvetBackend.Controllers
             return Ok(new { message = "User upserted successfully." });
         }
 
+        [HttpPost("updateProfile")]
+        public IActionResult UpdateProfile([FromBody] UserModel model)
+        {
+            var email = User.FindFirst("emails")?.Value;
+
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized("Email not found in token.");
+
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+                return NotFound("User not found.");
+
+            // Update nickname on the existing user
+            user.NickName = model.NickName;
+
+            _userRepository.UpdateUserProfile(user);
+
+            return Ok(new { message = "Profile updated successfully." });
+        }
+
 
         [HttpGet("all")]
         public IActionResult GetAllUsers()

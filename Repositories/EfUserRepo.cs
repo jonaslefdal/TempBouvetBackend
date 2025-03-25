@@ -40,6 +40,16 @@ namespace BouvetBackend.Repositories
             _context.SaveChanges();
         }
 
+        public void UpdateUserProfile(Users user)
+        {
+            var existing = _context.Users.FirstOrDefault(u => u.Email == user.Email);
+            if (existing != null)
+            {
+                existing.NickName = user.NickName;
+                _context.SaveChanges();
+            }
+        }
+
         public List<Users> GetAllUsers()
         {
             return _context.Users.OrderByDescending(u => u.TotalScore).ToList();

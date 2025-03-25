@@ -8,6 +8,7 @@ namespace BouvetBackend.Repositories
         Users GetUserById(int userId);
         Users GetUserByEmail(string email);
         void InsertOrUpdateUser(Users user);
+        void UpdateUserProfile(Users user);
         List<Users> GetAllUsers();
     }
 }
