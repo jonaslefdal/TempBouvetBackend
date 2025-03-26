@@ -96,7 +96,8 @@ namespace BouvetBackend.Controllers
             {
                 user.UserId,
                 user.NickName,
-                user.TotalScore
+                user.TotalScore,
+                user.ProfilePicture
             }).ToList(); 
 
             return Ok(leaderboard);
