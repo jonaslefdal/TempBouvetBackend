@@ -51,14 +51,20 @@ namespace BouvetBackend.Controllers
 
             _userRepository.InsertOrUpdateUser(entity);
 
+            var savedUser = _userRepository.GetUserByEmail(email);
+
+            if (savedUser == null)
+            {
+                return StatusCode(500, "User could not be retrieved after upsert.");
+            }
+
             return Ok(new 
             {
                 message = "User upserted successfully.",
-                isProfileComplete = !string.IsNullOrWhiteSpace(entity.NickName)
-                                    && !string.IsNullOrWhiteSpace(entity.Address)
-                                    && entity.CompanyId != null
+                isProfileComplete = !string.IsNullOrWhiteSpace(savedUser.NickName)
+                                    && !string.IsNullOrWhiteSpace(savedUser.Address)
+                                    && savedUser.CompanyId != null
             });
-
         }
 
         [HttpPost("updateProfile")]
