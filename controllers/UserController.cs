@@ -51,7 +51,14 @@ namespace BouvetBackend.Controllers
 
             _userRepository.InsertOrUpdateUser(entity);
 
-            return Ok(new { message = "User upserted successfully." });
+            return Ok(new 
+            {
+                message = "User upserted successfully.",
+                isProfileComplete = !string.IsNullOrWhiteSpace(entity.NickName)
+                                    && !string.IsNullOrWhiteSpace(entity.Address)
+                                    && entity.CompanyId != null
+            });
+
         }
 
         [HttpPost("updateProfile")]
