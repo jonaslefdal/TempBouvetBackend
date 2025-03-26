@@ -51,7 +51,7 @@ namespace BouvetBackend.Controllers
 
             _userRepository.InsertOrUpdateUser(entity);
 
-            var savedUser = _userRepository.GetUserByEmail(email);
+            var savedUser = _userRepository.GetUserByAzureId(azureId);
 
             if (savedUser == null)
             {

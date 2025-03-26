@@ -7,6 +7,7 @@ namespace BouvetBackend.Repositories
     {
         Users GetUserById(int userId);
         Users GetUserByEmail(string email);
+        Users GetUserByAzureId(string azureId);
         void InsertOrUpdateUser(Users user);
         void UpdateUserProfile(Users user);
         List<Users> GetAllUsers();

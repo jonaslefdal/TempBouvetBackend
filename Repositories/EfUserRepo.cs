@@ -55,5 +55,9 @@ namespace BouvetBackend.Repositories
         {
             return _context.Users.OrderByDescending(u => u.TotalScore).ToList();
         }
+        public Users GetUserByAzureId(string azureId)
+        {
+            return _context.Users.FirstOrDefault(u => u.AzureId == azureId);
+        }
     }
 }
