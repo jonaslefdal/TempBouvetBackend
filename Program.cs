@@ -22,8 +22,8 @@ builder.Services.AddCors(options =>
             "https://jonaslefdal.github.io/BouvetApp/", 
             "https://vickynygaard.github.io/Kortreist", 
             "https://vickynygaard.github.io/Kortreist/",
-            "https://hedgehog-calm-polecat.ngrok-free.app/",
-            "https://hedgehog-calm-polecat.ngrok-free.app") 
+            "https://a9fj38dkfj3lsd8f7a3lfj2n93xj2lfkd93jf02nd9r3nf83ndk3fj.loca.lt/",
+            "https://a9fj38dkfj3lsd8f7a3lfj2n93xj2lfkd93jf02nd9r3nf83ndk3fj.loca.lt") 
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials()); 
