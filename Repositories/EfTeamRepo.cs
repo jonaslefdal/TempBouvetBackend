@@ -35,7 +35,9 @@ namespace BouvetBackend.Repositories
 
         public Teams Get(int teamId)
         {
-            return _context.Teams.FirstOrDefault(t => t.TeamId == teamId);
+            return _context.Teams
+                        .Include(t => t.Users)
+                        .FirstOrDefault(t => t.TeamId == teamId);
         }
 
         public void Upsert(Teams team)
