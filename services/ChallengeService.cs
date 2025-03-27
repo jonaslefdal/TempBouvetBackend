@@ -24,30 +24,31 @@ namespace BouvetBackend.Services
             _context = context;
         }
     
-        public async Task CheckAndUpdateProgress(int userId, string method)
+    public async Task CheckAndUpdateProgress(int userId, string method)
+    {
+        DateTime weekStart = DateTime.UtcNow.StartOfWeek(DayOfWeek.Monday);
+
+        var entriesThisWeek = await _context.TransportEntry
+            .Where(te => te.UserId == userId && te.Method == method && te.CreatedAt >= weekStart)
+            .ToListAsync();
+
+        int countThisWeek = entriesThisWeek.Count;
+
+        int currentGroup = GetCurrentRotationGroup();
+
+        var challenges = await _context.Challenge
+            .Where(c => c.RotationGroup == currentGroup && c.RequiredTransportMethod == method)
+            .ToListAsync();
+
+        foreach (var challenge in challenges)
         {
-            DateTime weekStart = DateTime.UtcNow.StartOfWeek(DayOfWeek.Monday);
-
-            var entriesThisWeek = await _context.TransportEntry
-                .Where(te => te.UserId == userId && te.Method == method && te.CreatedAt >= weekStart)
-                .ToListAsync();
-
-            int countThisWeek = entriesThisWeek.Count;
-
-            int currentGroup = GetCurrentRotationGroup();
-
-            var challenges = _context.Challenge
-                .Where(c => c.RotationGroup == currentGroup && c.RequiredTransportMethod == method)
-                .ToList();
-
-            foreach (var challenge in challenges)
+            if (challenge.RequiredCount.HasValue && countThisWeek >= challenge.RequiredCount.Value)
             {
-                if (challenge.RequiredCount.HasValue && countThisWeek >= challenge.RequiredCount.Value)
-                {
-                    CompleteChallengeForUser(userId, challenge);
-                }
+                await CompleteChallengeForUser(userId, challenge);
             }
         }
+    }
+
 
         private int GetCurrentRotationGroup()
         {
@@ -57,7 +58,7 @@ namespace BouvetBackend.Services
             return (weeksSinceStart % totalGroups) + 1;
         }
 
-        private void CompleteChallengeForUser(int userId, Challenge challenge)
+       private async Task CompleteChallengeForUser(int userId, Challenge challenge)
         {
             var attempt = new UserChallengeAttempt
             {
@@ -67,15 +68,16 @@ namespace BouvetBackend.Services
                 AttemptedAt = DateTime.UtcNow
             };
 
-            _context.UserChallengeAttempt.Add(attempt);
+            await _context.UserChallengeAttempt.AddAsync(attempt);
 
-            var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user != null)
             {
                 user.TotalScore += challenge.Points;
             }
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
+
     }
 }
