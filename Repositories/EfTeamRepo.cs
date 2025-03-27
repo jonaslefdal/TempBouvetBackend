@@ -19,15 +19,19 @@ namespace BouvetBackend.Repositories
         public List<TeamModel> GetTeamsByCompanyId(int companyId)
         {
             return _context.Teams
-                        .Where(t => t.CompanyId == companyId)
-                        .Select(t => new TeamModel
-                        {
-                            TeamId = t.TeamId,
-                            Name = t.Name,
-                            CompanyId = t.CompanyId
-                        })
-                        .ToList();
+                .Where(t => t.CompanyId == companyId)
+                .Include(t => t.Users) 
+                .Select(t => new TeamModel
+                {
+                    TeamId = t.TeamId,
+                    Name = t.Name,
+                    CompanyId = t.CompanyId,
+                    MaxMembers = t.MaxMembers,
+                    MemberCount = t.Users.Count()
+                })
+                .ToList();
         }
+
 
         public Teams Get(int teamId)
         {

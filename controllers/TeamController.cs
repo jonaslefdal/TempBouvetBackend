@@ -35,10 +35,18 @@ namespace BouvetBackend.Controllers
 
             // Return teams for the user’s company.
             var teams = _teamRepository.GetTeamsByCompanyId(user.CompanyId ?? 0);
+            
             if (teams == null || teams.Count == 0)
                 return NotFound("No teams found for your company.");
 
-            return Ok(teams);
+                var result = teams.Select(team => new {
+                TeamId = team.TeamId,
+                Name = team.Name,
+                MemberCount = team.MemberCount, 
+                MaxMembers = team.MaxMembers
+            });
+
+            return Ok(result);
         }
 
         // POST: api/team/upsert
@@ -181,8 +189,5 @@ namespace BouvetBackend.Controllers
 
                 return Ok(leaderboard);
             }
-
-
-
     }
 }
