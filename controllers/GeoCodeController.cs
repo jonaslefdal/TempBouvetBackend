@@ -32,8 +32,10 @@ public class GeocodeController : ControllerBase
             return BadRequest("Missing address parameter");
         }
 
-        var orsUrl = $"https://api.openrouteservice.org/geocode/search?api_key={_orsApiKey}&text={Uri.EscapeDataString(address)}";
-
+        var orsUrl = $"https://api.openrouteservice.org/geocode/search" +
+             $"?api_key={_orsApiKey}" +
+             $"&text={Uri.EscapeDataString(address)}" +
+             $"&boundary.country=NO";
         try
         {
             var response = await _httpClient.GetAsync(orsUrl);
