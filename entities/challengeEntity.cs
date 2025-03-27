@@ -23,6 +23,10 @@ namespace BouvetBackend.Entities
         [Required]
         public int RotationGroup { get; set; }
 
+        public string? RequiredTransportMethod { get; set; }
+        // How many times the user must log this transport entry during the week
+        public int? RequiredCount { get; set; }
+
         // Date and time when the challenge was created
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

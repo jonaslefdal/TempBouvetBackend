@@ -19,6 +19,7 @@ namespace BouvetBackend.Controllers
         private readonly IServiceProvider _serviceProvider;
         private readonly IGeocodingService _geocodingService;
         private readonly IDistanceService _distanceService;
+        private readonly ChallengeProgressService _challengeProgressService;
 
 
         private const double FIXED_LONGITUDE = 7.9652276;
@@ -28,7 +29,8 @@ namespace BouvetBackend.Controllers
          IAchievementRepository achievementRepository, 
          IServiceProvider serviceProvider,
          IGeocodingService geocodingService,
-         IDistanceService distanceService)
+         IDistanceService distanceService,
+         ChallengeProgressService challengeProgressService)
         {
             _transportEntryRepository = transportEntryRepository;
             _userRepository = userRepository;
@@ -36,6 +38,7 @@ namespace BouvetBackend.Controllers
             _serviceProvider = serviceProvider;
             _geocodingService = geocodingService;
             _distanceService = distanceService;
+            _challengeProgressService = challengeProgressService;
 
 
         }
@@ -95,6 +98,8 @@ namespace BouvetBackend.Controllers
                 var achievementRepository = scope.ServiceProvider.GetRequiredService<IAchievementRepository>();
                 await achievementRepository.CheckForAchievements(user.UserId, model.Method ?? string.Empty);
             });
+
+            await _challengeProgressService.CheckAndUpdateProgress(user.UserId, entity.Method);
 
             return Ok(new 
             { 
