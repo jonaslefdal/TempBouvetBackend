@@ -29,6 +29,7 @@ namespace BouvetBackend.Models.TeamModel
         public string? Name { get; set; }
         [Required]        
         public int CompanyId { get; set; }
+        public int MaxMembers { get; set; } = 5;
 
     }
     public class JoinTeamModel

@@ -102,6 +102,9 @@ namespace BouvetBackend.Controllers
             if (team.CompanyId != user.CompanyId)
                 return BadRequest("Cannot join a team from a different company.");
 
+            if (team.Users.Count >= team.MaxMembers)
+                return BadRequest("Team is full.");
+
             // Update the user's team
             user.TeamId = model.TeamId;
             _userRepository.InsertOrUpdateUser(user);  
@@ -172,6 +175,7 @@ namespace BouvetBackend.Controllers
                 {
                     TeamId = team.TeamId,
                     Name = team.Name,
+                    MemberCount = team.Users != null ? team.Users.Count() : 0, 
                     TeamTotalScore = team.Users.Sum(user => user.TotalScore),
                 }).ToList();
 
