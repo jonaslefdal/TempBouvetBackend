@@ -16,12 +16,21 @@ namespace BouvetBackend.Controllers
         private readonly ICompanyRepository _companyRepository;
         private readonly IUserRepository _userRepository;
         private readonly ITransportEntryRepository _transportEntryRepository;
+        private readonly IChallengeRepository _challengeRepository;
+        private readonly IUserChallengeProgressRepository _challengeProgressRepository;
 
-        public ProfileController(ICompanyRepository companyRepository,IUserRepository userRepository, ITransportEntryRepository transportEntryRepository)
+        public ProfileController(ICompanyRepository companyRepository, 
+        IUserRepository userRepository, 
+        ITransportEntryRepository transportEntryRepository,
+        IChallengeRepository challengeRepository,
+        IUserChallengeProgressRepository challengeProgressRepository
+        )
         {
             _companyRepository = companyRepository;
             _userRepository = userRepository;
             _transportEntryRepository = transportEntryRepository;
+            _challengeRepository = challengeRepository;
+            _challengeProgressRepository = challengeProgressRepository;
         }
 
         [HttpGet("allComp")]
@@ -141,5 +150,48 @@ namespace BouvetBackend.Controllers
 
         return Ok(new { totalMoneySaved });
         }
+
+        [HttpGet("completedcount")]
+        public IActionResult GetCompletedChallengesCount()
+        {
+            var email = User.FindFirst("emails")?.Value;
+            if (string.IsNullOrEmpty(email))
+                return BadRequest("Email parameter is required.");
+
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+                return NotFound("User not found.");
+
+            // Get all attempts for this user
+            var attempts = _challengeProgressRepository.GetAttemptsByUserId(user.UserId);
+
+            // Group attempts by challenge
+            var attemptsGrouped = attempts
+                .GroupBy(a => a.ChallengeId)
+                .Select(g => new { ChallengeId = g.Key, AttemptCount = g.Count() })
+                .ToList();
+
+            // Get all challenges (so we can see each challenge's MaxAttempts)
+            var allChallenges = _challengeRepository.GetAll();
+            var challengeLookup = allChallenges.ToDictionary(c => c.ChallengeId, c => c);
+
+            // Count how many are completed
+            int completedCount = 0;
+            foreach (var group in attemptsGrouped)
+            {
+                if (challengeLookup.TryGetValue(group.ChallengeId, out var challenge))
+                {
+                    // If user attempts >= challenge.MaxAttempts => fully completed
+                    if (group.AttemptCount >= challenge.MaxAttempts)
+                    {
+                        completedCount++;
+                    }
+                }
+            }
+
+            // Return just the count, or an object with more details if you like
+            return Ok(new { completedChallenges = completedCount });
+        }
+
     }
 }
