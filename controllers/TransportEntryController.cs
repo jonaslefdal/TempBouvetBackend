@@ -93,8 +93,20 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
 
             _transportEntryRepository.Upsert(entity);
 
-        await _achievementRepository.CheckForAchievements(user.UserId, model.Method ?? string.Empty);
-
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+            // Fire-and-forget achievement checking.
+                using var scope = _serviceProvider.CreateScope();
+                var achievementRepository = scope.ServiceProvider.GetRequiredService<IAchievementRepository>();
+                await achievementRepository.CheckForAchievements(user.UserId, model.Method ?? string.Empty);
+              }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Achievement check failed: {ex.Message}");
+            }
+        });
 
         _ = Task.Run(async () =>
         {
