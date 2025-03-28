@@ -47,6 +47,7 @@ namespace BouvetBackend.Repositories
             {
                 existing.NickName = user.NickName;
                 existing.ProfilePicture = user.ProfilePicture;
+                existing.Address = user.Address;
                 _context.SaveChanges();
             }
         }

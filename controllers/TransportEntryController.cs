@@ -44,8 +44,10 @@ namespace BouvetBackend.Controllers
         }
 
         [HttpPost("upsert")]
-        public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
-        {
+public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
+{
+    try
+    {
             if (model == null || string.IsNullOrEmpty(model.StartingAddress))
             {
                 return BadRequest("Invalid data.");
@@ -91,15 +93,23 @@ namespace BouvetBackend.Controllers
 
             _transportEntryRepository.Upsert(entity);
 
-            // Fire-and-forget achievement checking.
-            _ = Task.Run(async () =>
+        await _achievementRepository.CheckForAchievements(user.UserId, model.Method ?? string.Empty);
+
+
+        _ = Task.Run(async () =>
+        {
+            try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var achievementRepository = scope.ServiceProvider.GetRequiredService<IAchievementRepository>();
-                await achievementRepository.CheckForAchievements(user.UserId, model.Method ?? string.Empty);
-            });
+                var challengeProgressService = scope.ServiceProvider.GetRequiredService<ChallengeProgressService>();
+                await challengeProgressService.CheckAndUpdateProgress(user.UserId, entity.Method);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Challenge progress check failed: {ex.Message}");
+            }
+        });
 
-            await _challengeProgressService.CheckAndUpdateProgress(user.UserId, entity.Method);
 
             return Ok(new 
             { 
@@ -107,7 +117,12 @@ namespace BouvetBackend.Controllers
                 distanceKm, 
                 calculatedPoints 
             });
-        }
+}
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Internal error: {ex.Message}");
+    }
+}
 
         private int CalculatePoints(double distanceKm, string mode)
         {

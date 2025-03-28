@@ -11,6 +11,7 @@ namespace BouvetBackend.Repositories
         List<Achievement> GetByCondition(string conditionType);
         Task CheckForAchievements(int userId, string activityType);
         List<UserAchievement> GetUserAchievements(int id);
+        Dictionary<int, int> GetAchievementProgress(int userId);
 
     }
 }

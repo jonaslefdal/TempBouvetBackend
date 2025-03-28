@@ -19,24 +19,36 @@ namespace BouvetBackend.Controllers
             _userRepository = userRepository;
         }
 
-        [HttpGet("getUserAchivements")]
-        public IActionResult GetUserAchivements()
+        [HttpGet("getUserAchievements")]
+        public IActionResult GetUserAchievements()
         {
             var email = User.FindFirst("emails")?.Value;
+            if (string.IsNullOrEmpty(email)) return BadRequest("Email claim missing.");
 
-            if (string.IsNullOrEmpty(email))
-            {
-                return BadRequest("Email claim missing.");
-            }
-            
             var user = _userRepository.GetUserByEmail(email);
-            if (user == null)
+            if (user == null) return NotFound("User not found.");
+
+            var achievements = _achievementRepository.GetAll(); // total thresholds
+            var earned = _achievementRepository.GetUserAchievements(user.UserId);
+
+            var progressMap = _achievementRepository.GetAchievementProgress(user.UserId);
+
+            var result = achievements.Select(a =>
             {
-                return NotFound("User not found.");
-            }
-            var data = _achievementRepository.GetUserAchievements(user.UserId);
-            
-            return Ok(data);
+                var earnedEntry = earned.FirstOrDefault(e => e.AchievementId == a.AchievementId);
+                return new {
+                    achievementId = a.AchievementId,
+                    name = a.Name,
+                    description = a.Description,
+                    total = a.Threshold,
+                    progress = progressMap.GetValueOrDefault(a.AchievementId, 0),
+                    earnedAt = earnedEntry?.EarnedAt
+                };
+            });
+
+            return Ok(result);
         }
+
+
     }
 }

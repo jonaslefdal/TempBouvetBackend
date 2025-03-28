@@ -4,23 +4,20 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BouvetBackend.Entities
 {
-    [Table("userChallengeAttempts")]
-    public class UserChallengeAttempt
+    [Table("userChallengeProgress")]
+    public class UserChallengeProgress
     {
         [Key]
-        public int UserChallengeAttemptId { get; set; }
+        public int UserChallengeProgressId { get; set; }
 
         [ForeignKey("Users")]
         public int UserId { get; set; }
         public virtual Users? Users { get; set; }
-
+        
         [ForeignKey("Challenge")]
         public int ChallengeId { get; set; }
         public virtual Challenge? Challenge { get; set; }
-
-        // Kanskje ha poeng lagret
         public int PointsAwarded { get; set; }
-
         public DateTime AttemptedAt { get; set; } = DateTime.UtcNow;
     }
 }

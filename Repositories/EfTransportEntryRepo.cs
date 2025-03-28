@@ -75,5 +75,32 @@ namespace BouvetBackend.Repositories
         {
             return _context.TransportEntry.Count(te => te.UserId == userId);
         }
+        public int GetTransportEntryCount(int userId, string method, DateTime since)
+        {
+            return _context.TransportEntry.Count(te =>
+                te.UserId == userId &&
+                te.Method == method &&
+                te.CreatedAt >= since);
+        }
+        public int GetTransportDistanceCount(int userId, string method, DateTime since, double requiredDistanceKm)
+        {
+            return _context.TransportEntry.Count(te =>
+                te.UserId == userId &&
+                te.Method == method &&
+                te.CreatedAt >= since &&
+                te.DistanceKm >= requiredDistanceKm);
+        }
+
+        public double GetTransportDistanceSum(int userId, string method, DateTime since)
+        {
+            return _context.TransportEntry
+                .Where(te => te.UserId == userId &&
+                            te.Method == method &&
+                            te.CreatedAt >= since)
+                .Sum(te => te.DistanceKm);
+        }
+
+
+
     }
 }

@@ -38,13 +38,14 @@ builder.Services.AddCors(options =>
     builder.Services.AddScoped<IApiRepository, EfApiRepository>();
     builder.Services.AddScoped<IUserRepository, EfUserRepository>();
     builder.Services.AddScoped<IChallengeRepository, EfChallengeRepository>();
-    builder.Services.AddScoped<IUserChallengeAttemptRepository, EfUserChallengeAttemptRepository>();
+    builder.Services.AddScoped<IUserChallengeProgressRepository, EfUserChallengeProgressRepository>();
     builder.Services.AddScoped<ITransportEntryRepository, EfTransportEntryRepository>();
     builder.Services.AddScoped<ICompanyRepository, EfCompanyRepository>();
     builder.Services.AddScoped<ITeamRepository, EfTeamRepository>();
     builder.Services.AddScoped<IAchievementRepository, EfAchievementRepository>();
     builder.Services.AddHttpClient<IGeocodingService, GeocodingService>();
     builder.Services.AddHttpClient<IDistanceService, DistanceService>();
+    builder.Services.AddScoped<ChallengeProgressService>();
 
 /*
     builder.WebHost.ConfigureKestrel(options =>

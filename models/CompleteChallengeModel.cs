@@ -5,9 +5,8 @@ namespace BouvetBackend.Models.CompleteChallengeModel
     public class CompleteChallengeRequest
     {
         [Required]
-        public string? Email { get; set; }
-        
-        [Required]
         public int ChallengeId { get; set; }
+        public DateTime? ActivityDate { get; set; }
+
     }
 }

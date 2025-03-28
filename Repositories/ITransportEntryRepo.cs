@@ -10,7 +10,10 @@ namespace BouvetBackend.Repositories
         double GetTotalCo2SavingsByUser(int userId);
         int GetTotalTravelCountByUser(int userId); 
         double GetTotalMoneySaved(int userId); 
+        int GetTransportEntryCount(int userId, string method, DateTime since);
+        int GetTransportDistanceCount(int userId, string method, DateTime since, double requiredDistanceKm);
 
+        double GetTransportDistanceSum(int userId, string method, DateTime since);
         
     }
 }

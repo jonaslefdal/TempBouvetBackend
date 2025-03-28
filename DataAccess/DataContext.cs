@@ -17,7 +17,7 @@ namespace BouvetBackend.DataAccess
             modelBuilder.Entity<TransportEntry>().ToTable("transportEntries").HasKey(x => x.TransportEntryId);
             modelBuilder.Entity<Users>().ToTable("users").HasKey(x => x.UserId);
             modelBuilder.Entity<Challenge>().ToTable("challenges").HasKey(x => x.ChallengeId);
-            modelBuilder.Entity<UserChallengeAttempt>().ToTable("userChallengeAttempts").HasKey(x => x.UserChallengeAttemptId);
+            modelBuilder.Entity<UserChallengeProgress>().ToTable("userChallengeProgress").HasKey(x => x.UserChallengeProgressId);
             modelBuilder.Entity<Company>().ToTable("companies").HasKey(x => x.CompanyId);
             modelBuilder.Entity<Teams>().ToTable("teams").HasKey(x => x.TeamId);
             modelBuilder.Entity<Achievement>().ToTable("achievement").HasKey(x => x.AchievementId);
@@ -29,7 +29,7 @@ namespace BouvetBackend.DataAccess
         public DbSet<API> API { get; set; }
         public DbSet<TransportEntry> TransportEntry { get; set; }
         public DbSet<Challenge> Challenge { get; set; }
-        public DbSet<UserChallengeAttempt> UserChallengeAttempt { get; set; }
+        public DbSet<UserChallengeProgress> UserChallengeProgress { get; set; }
         public DbSet<Users> Users { get; set; }
         public DbSet<Company> Company { get; set; }
         public DbSet<Teams> Teams { get; set; }

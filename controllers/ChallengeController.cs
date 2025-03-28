@@ -6,6 +6,8 @@ using BouvetBackend.Repositories;
 using BouvetBackend.Models.UserModel;
 using BouvetBackend.Models.CompleteChallengeModel;
 using Microsoft.AspNetCore.Authorization;
+using BouvetBackend.Extensions;
+
 
 namespace BouvetBackend.Controllers
 {
@@ -15,16 +17,19 @@ namespace BouvetBackend.Controllers
     public class ChallengeController : Controller
     {
         private readonly IChallengeRepository _challengeRepository;
-        private readonly IUserChallengeAttemptRepository _challengeAttemptRepository;
+        private readonly IUserChallengeProgressRepository _challengeProgressRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ITransportEntryRepository _transportRepository;
 
         public ChallengeController(IChallengeRepository challengeRepository,
-                                   IUserChallengeAttemptRepository challengeAttemptRepository,
-                                   IUserRepository userRepository)
+                                   IUserChallengeProgressRepository challengeProgressRepository,
+                                   IUserRepository userRepository,
+                                   ITransportEntryRepository transportRepository)
         {
             _challengeRepository = challengeRepository;
-            _challengeAttemptRepository = challengeAttemptRepository;
+            _challengeProgressRepository = challengeProgressRepository;
             _userRepository = userRepository;
+            _transportRepository = transportRepository;
 
         }
 
@@ -74,7 +79,7 @@ namespace BouvetBackend.Controllers
                 return NotFound("User not found.");
             }
 
-            var attempts = _challengeAttemptRepository.GetAttemptsByUserId(user.UserId);
+            var attempts = _challengeProgressRepository.GetAttemptsByUserId(user.UserId);
 
              var grouped = attempts
             .GroupBy(a => a.ChallengeId)
@@ -92,12 +97,19 @@ namespace BouvetBackend.Controllers
         [HttpPost("complete")]
         public IActionResult CompleteChallenge([FromBody] CompleteChallengeRequest request)
         {
+            var email = User.FindFirst("emails")?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Email parameter is required.");
+            }
+
             if (request == null)
             {
                 return BadRequest("Invalid data.");
             }
 
-            var user = _userRepository.GetUserByEmail(request.Email);
+            var user = _userRepository.GetUserByEmail(email);
             if (user == null)
             {
                 return NotFound("User not found.");
@@ -110,7 +122,7 @@ namespace BouvetBackend.Controllers
             }
 
             // Get current attempt count for this challenge.
-            var attemptCount = _challengeAttemptRepository
+            var attemptCount = _challengeProgressRepository
                 .GetAttemptsByUserForChallenge(user.UserId, challenge.ChallengeId)
                 .Count;
 
@@ -123,7 +135,7 @@ namespace BouvetBackend.Controllers
             bool isFinalAttempt = (attemptCount + 1 == challenge.MaxAttempts);
 
             // Create a new challenge attempt with points based on final attempt status.
-            var attempt = new UserChallengeAttempt
+            var attempt = new UserChallengeProgress
             {
                 UserId = user.UserId,
                 ChallengeId = challenge.ChallengeId,
@@ -132,14 +144,138 @@ namespace BouvetBackend.Controllers
             };
 
             // Repository will update the user's TotalScore.
-            _challengeAttemptRepository.Upsert(attempt);
+            _challengeProgressRepository.Upsert(attempt);
 
             return Ok(new
             {
                 message = isFinalAttempt
                     ? "Challenge fully completed! Points awarded."
                     : null,
-                attemptId = attempt.UserChallengeAttemptId
+                attemptId = attempt.UserChallengeProgressId
+            });
+        }
+
+
+        [HttpGet("current/user")]
+        public async Task<IActionResult> GetCurrentUserChallenges([FromQuery] DateTime? testDate)
+        {
+            var email = User.FindFirst("emails")?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Email parameter is required.");
+            }
+
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            DateTime now = testDate ?? DateTime.UtcNow;
+
+            int totalGroups = 10;
+            DateTime cycleStart = new DateTime(2025, 3, 13);
+            int weeksSinceStart = (int)((now - cycleStart).TotalDays / 7);
+            int currentGroup = (weeksSinceStart % totalGroups) + 1;
+
+            var currentChallenges = _challengeRepository.GetChallengesByRotationGroup(currentGroup);
+            var startOfWeek = now.StartOfWeek(DayOfWeek.Monday);
+
+            var result = new List<object>();
+
+            foreach (var challenge in currentChallenges)
+            {
+                double userProgress;
+
+                if (challenge.RequiredTransportMethod == "custom")
+                {
+                    userProgress = await _challengeProgressRepository
+                        .GetUserAttemptCountForChallengeThisWeekAsync(user.UserId, challenge.ChallengeId, startOfWeek);
+                }
+                else if (challenge.ConditionType == "Distance" && challenge.RequiredDistanceKm.HasValue)
+                {
+                    userProgress = _transportRepository.GetTransportDistanceSum(
+                        user.UserId, challenge.RequiredTransportMethod, startOfWeek);
+                }
+                else
+                {
+                    userProgress = _transportRepository.GetTransportEntryCount(
+                        user.UserId, challenge.RequiredTransportMethod, startOfWeek);
+                }
+
+                result.Add(new
+                {
+                    ChallengeId = challenge.ChallengeId,
+                    Description = challenge.Description,
+                    Method = challenge.RequiredTransportMethod,
+                    Points = challenge.Points,
+                    Type = challenge.ConditionType,
+                    RequiredCount = challenge.MaxAttempts,
+                    RequiredDistanceKm = challenge.RequiredDistanceKm,
+                    UserProgress = userProgress
+                });
+            }
+
+            return Ok(result);
+
+        }
+
+
+        [HttpPost("custom/complete")]
+        public async Task<IActionResult> CompleteCustomChallenge([FromBody] CompleteChallengeRequest request)
+        {
+            var email = User.FindFirst("emails")?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Email parameter is required.");
+            }
+
+            if (request == null || request.ChallengeId <= 0)
+            {
+                return BadRequest("Invalid data.");
+            }
+
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+                return NotFound("User not found.");
+
+            var challenge = _challengeRepository.Get(request.ChallengeId);
+            if (challenge == null || challenge.RequiredTransportMethod != "custom")
+                return BadRequest("Invalid or non-custom challenge.");
+
+            DateTime weekStart = DateTime.UtcNow.StartOfWeek(DayOfWeek.Monday);
+
+            int attemptsThisWeek = await _challengeProgressRepository
+                .GetUserAttemptCountForChallengeThisWeekAsync(user.UserId, challenge.ChallengeId, weekStart);
+
+
+            if (attemptsThisWeek >= challenge.MaxAttempts)
+                return BadRequest("Challenge already completed for this week.");
+
+            // Record the attempt
+            var attempt = new UserChallengeProgress
+            {
+                UserId = user.UserId,
+                ChallengeId = challenge.ChallengeId,
+                PointsAwarded = (attemptsThisWeek + 1 == challenge.MaxAttempts) ? challenge.Points : 0,
+                AttemptedAt = request.ActivityDate ?? DateTime.UtcNow
+            };
+
+            _challengeProgressRepository.Upsert(attempt); 
+
+            if (attempt.PointsAwarded > 0)
+            {
+                user.TotalScore += attempt.PointsAwarded;
+            }
+
+            return Ok(new
+            {
+                completed = (attemptsThisWeek + 1 == challenge.MaxAttempts),
+                pointsAwarded = attempt.PointsAwarded,
+                message = (attempt.PointsAwarded > 0) ? "Challenge completed!" : "Progress recorded!",
+                attemptId = attempt.UserChallengeProgressId
             });
         }
     }

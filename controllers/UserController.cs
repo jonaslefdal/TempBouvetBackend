@@ -89,6 +89,7 @@ namespace BouvetBackend.Controllers
             // Update nickname on the existing user
             user.NickName = model.NickName;
             user.ProfilePicture = model.ProfilePicture;
+            user.Address = model.Address;
 
             _userRepository.UpdateUserProfile(user);
 

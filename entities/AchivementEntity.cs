@@ -13,5 +13,6 @@ namespace BouvetBackend.Entities
         [Required]
         public string ConditionType { get; set; } = string.Empty; 
         public int Threshold { get; set; }
+        public string? Description { get; set; }
     }
 }
