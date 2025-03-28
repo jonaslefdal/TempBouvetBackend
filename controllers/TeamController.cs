@@ -34,7 +34,7 @@ namespace BouvetBackend.Controllers
                 return NotFound("User not found.");
 
             // Return teams for the user’s company.
-            var teams = _teamRepository.GetTeamsByCompanyId(user.CompanyId ?? 0);
+            var teams = _teamRepository.GetTeamsByCompanyId(user.CompanyId);
             
             if (teams == null || teams.Count == 0)
                 return NotFound("No teams found for your company.");
@@ -55,26 +55,17 @@ namespace BouvetBackend.Controllers
         {
             if (team == null)
                 return BadRequest("Invalid team data.");
-            Console.WriteLine(team);
 
             // Optionally, check that the team.CompanyId matches the user's company.
             var email = User.FindFirst("emails")?.Value;
             if (string.IsNullOrEmpty(email))
                 return BadRequest("Email claim missing.");
 
-                Console.WriteLine(email);
-
             var user = _userRepository.GetUserByEmail(email);
             if (user == null)
                 return NotFound("User not found.");
 
-                Console.WriteLine(user);
-
-            if (user.CompanyId != team.CompanyId)
-            {
-                Console.WriteLine("user.CompanyId != team.CompanyId)");
-                return BadRequest("Cannot create or update teams outside your company.");
-            }
+                team.CompanyId = user.CompanyId;
 
                 var entity = new Teams
                 {
@@ -83,6 +74,10 @@ namespace BouvetBackend.Controllers
                 };
 
             _teamRepository.Upsert(entity);
+
+            user.TeamId = entity.TeamId;
+            _userRepository.InsertOrUpdateUser(user);
+
             return Ok(new { message = "Team upserted successfully." });
         }
 

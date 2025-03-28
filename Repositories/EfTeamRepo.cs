@@ -32,7 +32,6 @@ namespace BouvetBackend.Repositories
                 .ToList();
         }
 
-
         public Teams Get(int teamId)
         {
             return _context.Teams
