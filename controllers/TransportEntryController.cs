@@ -129,33 +129,83 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
                 distanceKm, 
                 calculatedPoints 
             });
-}
-    catch (Exception ex)
-    {
-        return StatusCode(500, $"Internal error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal error: {ex.Message}");
+        }
     }
-}
 
         private int CalculatePoints(double distanceKm, string mode)
         {
-            double baseMultiplier = 5; // internal base
-            double exponent = 0.9;     // sub-linear exponent
-            double modeMultiplier = mode.ToLower() switch
+            // CO₂ (grams) per km for each mode.
+            // car is carpooling so divided by 2
+            const double singleOccupantCO2 = 120.0;  // baseline for comparison
+            const double carpoolCO2 = 60.0;          // carpooling effective emission
+            const double busCO2 = 70.0;
+            const double cycleCO2 = 0.0;
+            const double walkCO2 = 0.0;
+
+            double modeCO2;
+            switch (mode.ToLower())
             {
-                "car"     => 1.00,
-                "bus"     => 1.05,
-                "cycling" => 1.08,
-                "walking" => 1.15,
-                _         => 1.00
-            };
+                case "car":
+                    // Car here represents carpooling.
+                    modeCO2 = carpoolCO2;
+                    break;
+                case "bus":
+                    modeCO2 = busCO2;
+                    break;
+                case "cycling":
+                    modeCO2 = cycleCO2;
+                    break;
+                case "walking":
+                    modeCO2 = walkCO2;
+                    break;
+                default:
+                    modeCO2 = singleOccupantCO2;
+                    break;
+            }
 
-            // Sub-linear growth: distance^exponent
-            double rawScore = baseMultiplier * Math.Pow(distanceKm, exponent) * modeMultiplier;
+            // Exponent is multiplier upwards
+            double exponent = 0.5;
+            double adjustedDistance = Math.Pow(distanceKm, exponent);
 
-            // Multiply by 10 to get a larger final value
-            double finalScore = rawScore * 10.0;
+            // Multiply the baseline CO2 by the adjusted distance to get score.
+            double baselineCO2 = singleOccupantCO2 * adjustedDistance;
+            double actualCO2 = modeCO2 * adjustedDistance;
+            double co2Saved = baselineCO2 - actualCO2;
+            if (co2Saved < 0)
+            {
+                co2Saved = 0;
+            }
 
-            return (int)finalScore;
+            // Convert grams CO2 saved into points.
+            // First, calculate a raw point value.
+            double points = co2Saved / 50.0;
+            double final = points * 50; // scaling factor
+
+            // Define max caps per mode.
+            double maxCap;
+            switch (mode.ToLower())
+            {
+                case "bus":
+                    maxCap = 300;
+                    break;
+                case "cycling":
+                case "walking":
+                    maxCap = 500;
+                    break;
+                case "car":
+                default:
+                    maxCap = 200;
+                    break;
+            }
+
+            // Apply the cap.
+            final = Math.Min(final, maxCap);
+
+            return (int)Math.Round(final);
         }
 
         private double CalculateCo2(double distanceKm, string mode)
