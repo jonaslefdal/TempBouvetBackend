@@ -48,12 +48,19 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
 {
     try
     {
+        var email = User.FindFirst("emails")?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Email claim missing.");
+            }
+
             if (model == null || string.IsNullOrEmpty(model.StartingAddress))
             {
                 return BadRequest("Invalid data.");
             }
 
-            var user = _userRepository.GetUserByEmail(model.Email ?? "");
+            var user = _userRepository.GetUserByEmail(email);
             if (user == null)
             {
                 return NotFound("User not found.");
@@ -121,7 +128,6 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
                 Console.WriteLine($"Challenge progress check failed: {ex.Message}");
             }
         });
-
 
             return Ok(new 
             { 
