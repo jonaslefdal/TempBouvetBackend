@@ -5,6 +5,7 @@ using System.Security.Claims;
 using BouvetBackend.Models.UserModel;
 using BouvetBackend.Entities;
 using BouvetBackend.Repositories;
+using BouvetBackend.DTO;
 
 namespace BouvetBackend.Controllers 
 {
@@ -18,12 +19,14 @@ namespace BouvetBackend.Controllers
         private readonly ITransportEntryRepository _transportEntryRepository;
         private readonly IChallengeRepository _challengeRepository;
         private readonly IUserChallengeProgressRepository _challengeProgressRepository;
+        private readonly IAchievementRepository _achievementRepository;
 
         public ProfileController(ICompanyRepository companyRepository, 
         IUserRepository userRepository, 
         ITransportEntryRepository transportEntryRepository,
         IChallengeRepository challengeRepository,
-        IUserChallengeProgressRepository challengeProgressRepository
+        IUserChallengeProgressRepository challengeProgressRepository,
+        IAchievementRepository achievementRepository
         )
         {
             _companyRepository = companyRepository;
@@ -31,7 +34,84 @@ namespace BouvetBackend.Controllers
             _transportEntryRepository = transportEntryRepository;
             _challengeRepository = challengeRepository;
             _challengeProgressRepository = challengeProgressRepository;
+            _achievementRepository = achievementRepository;
         }
+
+        // All api calls togheter to save load times 
+        [HttpGet("overview")]
+        public IActionResult GetProfileOverview()
+        {
+            var email = User.FindFirst("emails")?.Value;
+            if (string.IsNullOrEmpty(email))
+                return BadRequest("Email claim missing.");
+
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+                return NotFound("User not found.");
+
+            // Fetch profile related data
+            double totalCo2Savings = _transportEntryRepository.GetTotalCo2SavingsByUser(user.UserId);
+            int totalTravels = _transportEntryRepository.GetTotalTravelCountByUser(user.UserId);
+            double totalMoneySaved = _transportEntryRepository.GetTotalMoneySaved(user.UserId);
+
+            // Calculate completed challenges
+            var attempts = _challengeProgressRepository.GetAttemptsByUserId(user.UserId);
+            var attemptsGrouped = attempts
+                .GroupBy(a => a.ChallengeId)
+                .Select(g => new { ChallengeId = g.Key, AttemptCount = g.Count() })
+                .ToList();
+            var allChallenges = _challengeRepository.GetAll();
+            var challengeLookup = allChallenges.ToDictionary(c => c.ChallengeId, c => c);
+            int completedChallenges = attemptsGrouped.Sum(group =>
+            {
+                if (challengeLookup.TryGetValue(group.ChallengeId, out var challenge) &&
+                    group.AttemptCount >= challenge.MaxAttempts)
+                {
+                    return 1;
+                }
+                return 0;
+            });
+
+            // Fetch achievements data
+            var achievements = _achievementRepository.GetAll();
+            var earned = _achievementRepository.GetUserAchievements(user.UserId);
+            var progressMap = _achievementRepository.GetAchievementProgress(user.UserId);
+
+            // Map achievements into AchievementDto list
+            var achievementsDto = achievements.Select(a => new AchievementDto
+            {
+                AchievementId = a.AchievementId,
+                Name = a.Name,
+                Description = a.Description,
+                Total = a.Threshold,
+                Progress = progressMap.GetValueOrDefault(a.AchievementId, 0),
+                EarnedAt = earned.FirstOrDefault(e => e.AchievementId == a.AchievementId)?.EarnedAt
+            }).ToList();
+
+            // Map the user into a UserDto
+            var userDto = new UserDto
+            {
+                UserId = user.UserId,
+                Name = user.Name,
+                NickName = user.NickName,
+                ProfilePicture = user.ProfilePicture
+            };
+
+            // Build the overview DTO
+            var profileOverviewDto = new ProfileOverviewDto
+            {
+                User = userDto,
+                TotalCo2Savings = totalCo2Savings,
+                TotalTravels = totalTravels,
+                TotalMoneySaved = totalMoneySaved,
+                CompletedChallenges = completedChallenges,
+                Achievements = achievementsDto
+            };
+
+            return Ok(profileOverviewDto);
+        }
+
+
 
         [HttpGet("allComp")]
         public IActionResult GetAllCompanies()
