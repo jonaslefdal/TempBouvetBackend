@@ -34,7 +34,13 @@ namespace BouvetBackend.Controllers
                 return NotFound("User not found.");
 
             // Return teams for the user’s company.
-            var teams = _teamRepository.GetTeamsByCompanyId(user.CompanyId);
+            if (user.CompanyId == null)
+            {
+                return StatusCode(428, new { message = "User has not completed onboarding." });
+            }
+
+            var teams = _teamRepository.GetTeamsByCompanyId(user.CompanyId.Value);
+
             
             if (teams == null || teams.Count == 0)
                 return NotFound("No teams found for your company.");
@@ -65,7 +71,12 @@ namespace BouvetBackend.Controllers
             if (user == null)
                 return NotFound("User not found.");
 
-                team.CompanyId = user.CompanyId;
+            if (user.CompanyId == null)
+            {
+                return StatusCode(428, new { message = "User has not completed onboarding." });
+            }
+
+                team.CompanyId = user.CompanyId.Value;
 
                 var entity = new Teams
                 {
@@ -87,8 +98,7 @@ namespace BouvetBackend.Controllers
             if (model == null)
                 return BadRequest("Invalid data.");
 
-            var email = User.FindFirst("preferred_username")?.Value 
-                        ?? User.FindFirst("emails")?.Value;
+            var email = User.FindFirst("emails")?.Value;
             if (string.IsNullOrEmpty(email))
                 return BadRequest("Email claim missing.");
 

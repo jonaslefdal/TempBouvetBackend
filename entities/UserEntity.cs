@@ -11,16 +11,14 @@ namespace BouvetBackend.Entities
         public int UserId { get; set; }
         [Required]
         public string? AzureId { get; set; }
-
         [Required]
         public string? Name { get; set; }
+        [Required]
         public string? Email { get; set; }
 
         [ForeignKey("Company")]
-        public int CompanyId { get; set; }
-
+        public int? CompanyId { get; set; }
         public virtual Company? Company { get; set; }
-
         // Cached total score for performance
         public int TotalScore { get; set; } = 0;
         public string? NickName { get; set; }
