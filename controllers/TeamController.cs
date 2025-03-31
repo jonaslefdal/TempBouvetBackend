@@ -43,7 +43,9 @@ namespace BouvetBackend.Controllers
 
             
             if (teams == null || teams.Count == 0)
-                return NotFound("No teams found for your company.");
+                return Ok(new List<object>()); // Return empty list instead of 404
+
+
 
                 var result = teams.Select(team => new {
                 TeamId = team.TeamId,
