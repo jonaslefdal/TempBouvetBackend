@@ -88,19 +88,8 @@ namespace BouvetBackend.Controllers
                 EarnedAt = earned.FirstOrDefault(e => e.AchievementId == a.AchievementId)?.EarnedAt
             }).ToList();
 
-            // Map the user into a UserDto
-            var userDto = new UserDto
-            {
-                UserId = user.UserId,
-                Name = user.Name,
-                NickName = user.NickName,
-                ProfilePicture = user.ProfilePicture
-            };
-
-            // Build the overview DTO
-            var profileOverviewDto = new ProfileOverviewDto
-            {
-                User = userDto,
+            var profile = new {
+                User = user,
                 TotalCo2Savings = totalCo2Savings,
                 TotalTravels = totalTravels,
                 TotalMoneySaved = totalMoneySaved,
@@ -108,10 +97,8 @@ namespace BouvetBackend.Controllers
                 Achievements = achievementsDto
             };
 
-            return Ok(profileOverviewDto);
+            return Ok(profile);
         }
-
-
 
         [HttpGet("allComp")]
         public IActionResult GetAllCompanies()
