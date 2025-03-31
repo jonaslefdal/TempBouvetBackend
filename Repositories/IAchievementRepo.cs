@@ -9,7 +9,7 @@ namespace BouvetBackend.Repositories
         Achievement? Get(int achievementId);
         List<Achievement> GetAll();
         List<Achievement> GetByCondition(string conditionType);
-        Task CheckForAchievements(int userId, string activityType);
+        Task CheckForAchievements(int userId, string activityType, TransportEntry? entry = null);
         List<UserAchievement> GetUserAchievements(int id);
         Dictionary<int, int> GetAchievementProgress(int userId);
 

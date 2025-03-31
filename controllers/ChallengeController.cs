@@ -20,16 +20,22 @@ namespace BouvetBackend.Controllers
         private readonly IUserChallengeProgressRepository _challengeProgressRepository;
         private readonly IUserRepository _userRepository;
         private readonly ITransportEntryRepository _transportRepository;
+        private readonly IAchievementRepository _achievementRepository;
+        private readonly IServiceProvider _serviceProvider;
 
         public ChallengeController(IChallengeRepository challengeRepository,
                                    IUserChallengeProgressRepository challengeProgressRepository,
                                    IUserRepository userRepository,
-                                   ITransportEntryRepository transportRepository)
+                                   ITransportEntryRepository transportRepository,
+                                   IAchievementRepository achievementRepository,
+                                   IServiceProvider serviceProvider)
         {
             _challengeRepository = challengeRepository;
             _challengeProgressRepository = challengeProgressRepository;
             _userRepository = userRepository;
             _transportRepository = transportRepository;
+            _achievementRepository = achievementRepository;
+            _serviceProvider = serviceProvider;  
 
         }
 
@@ -269,6 +275,21 @@ namespace BouvetBackend.Controllers
             {
                 user.TotalScore += attempt.PointsAwarded;
             }
+
+             _ = Task.Run(async () =>
+            {
+                try
+                {
+                // Fire-and-forget achievement checking.
+                    using var scope = _serviceProvider.CreateScope();
+                    var achievementRepository = scope.ServiceProvider.GetRequiredService<IAchievementRepository>();
+                    await achievementRepository.CheckForAchievements(user.UserId, "custom");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Achievement check failed: {ex.Message}");
+                }
+            });
 
             return Ok(new
             {

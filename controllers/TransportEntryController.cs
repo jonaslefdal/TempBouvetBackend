@@ -107,7 +107,7 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
             // Fire-and-forget achievement checking.
                 using var scope = _serviceProvider.CreateScope();
                 var achievementRepository = scope.ServiceProvider.GetRequiredService<IAchievementRepository>();
-                await achievementRepository.CheckForAchievements(user.UserId, model.Method ?? string.Empty);
+                await achievementRepository.CheckForAchievements(user.UserId, model.Method ?? string.Empty, entity);
               }
             catch (Exception ex)
             {
