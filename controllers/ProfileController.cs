@@ -88,8 +88,17 @@ namespace BouvetBackend.Controllers
                 EarnedAt = earned.FirstOrDefault(e => e.AchievementId == a.AchievementId)?.EarnedAt
             }).ToList();
 
-            var profile = new {
-                User = user,
+            var userModel = new UserModel
+            {
+                Name = user.Name,
+                NickName = user.NickName,
+                TotalScore = user.TotalScore,
+                ProfilePicture = user.ProfilePicture
+            };
+
+            var profileOverviewDto = new ProfileOverviewDto
+            {
+                User = userModel,
                 TotalCo2Savings = totalCo2Savings,
                 TotalTravels = totalTravels,
                 TotalMoneySaved = totalMoneySaved,
@@ -97,7 +106,8 @@ namespace BouvetBackend.Controllers
                 Achievements = achievementsDto
             };
 
-            return Ok(profile);
+            return Ok(profileOverviewDto);
+
         }
 
         [HttpGet("allComp")]
