@@ -56,21 +56,10 @@ namespace BouvetBackend.Controllers
 
             // Calculate completed challenges
             var attempts = _challengeProgressRepository.GetAttemptsByUserId(user.UserId);
-            var attemptsGrouped = attempts
-                .GroupBy(a => a.ChallengeId)
-                .Select(g => new { ChallengeId = g.Key, AttemptCount = g.Count() })
-                .ToList();
-            var allChallenges = _challengeRepository.GetAll();
-            var challengeLookup = allChallenges.ToDictionary(c => c.ChallengeId, c => c);
-            int completedChallenges = attemptsGrouped.Sum(group =>
-            {
-                if (challengeLookup.TryGetValue(group.ChallengeId, out var challenge) &&
-                    group.AttemptCount >= challenge.MaxAttempts)
-                {
-                    return 1;
-                }
-                return 0;
-            });
+            int completedChallenges = attempts
+                .Select(a => a.ChallengeId)
+                .Distinct()
+                .Count();
 
             // Fetch achievements data
             var achievements = _achievementRepository.GetAll();
@@ -242,31 +231,13 @@ namespace BouvetBackend.Controllers
             // Get all attempts for this user
             var attempts = _challengeProgressRepository.GetAttemptsByUserId(user.UserId);
 
-            // Group attempts by challenge
-            var attemptsGrouped = attempts
-                .GroupBy(a => a.ChallengeId)
-                .Select(g => new { ChallengeId = g.Key, AttemptCount = g.Count() })
-                .ToList();
-
-            // Get all challenges (so we can see each challenge's MaxAttempts)
-            var allChallenges = _challengeRepository.GetAll();
-            var challengeLookup = allChallenges.ToDictionary(c => c.ChallengeId, c => c);
-
             // Count how many are completed
-            int completedCount = 0;
-            foreach (var group in attemptsGrouped)
-            {
-                if (challengeLookup.TryGetValue(group.ChallengeId, out var challenge))
-                {
-                    // If user attempts >= challenge.MaxAttempts => fully completed
-                    if (group.AttemptCount >= challenge.MaxAttempts)
-                    {
-                        completedCount++;
-                    }
-                }
-            }
+            int completedCount = attempts
+                .Select(a => a.ChallengeId)
+                .Distinct()
+                .Count();
 
-            // Return just the count, or an object with more details if you like
+            // Return just the count
             return Ok(new { completedChallenges = completedCount });
         }
 
