@@ -32,10 +32,12 @@ public class GeocodeController : ControllerBase
             return BadRequest("Missing address parameter");
         }
 
-        var orsUrl = $"https://api.openrouteservice.org/geocode/search" +
+       var orsUrl = $"https://api.openrouteservice.org/geocode/search" +
              $"?api_key={_orsApiKey}" +
              $"&text={Uri.EscapeDataString(address)}" +
-             $"&boundary.country=NO";
+             $"&boundary.country=NO" +
+             $"&layers=address"; 
+
         try
         {
             var response = await _httpClient.GetAsync(orsUrl);
@@ -45,7 +47,39 @@ public class GeocodeController : ControllerBase
             }
 
             var json = await response.Content.ReadAsStringAsync();
-            return Content(json, "application/json");
+
+            // Parse and filter features with house numbers
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("features", out var features))
+            {
+                var filteredFeatures = new System.Text.Json.Nodes.JsonArray();
+
+                foreach (var feature in features.EnumerateArray())
+                {
+                    if (feature.TryGetProperty("properties", out var props) &&
+                        props.TryGetProperty("label", out var labelElement))
+                    {
+                        var label = labelElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(label) && System.Text.RegularExpressions.Regex.IsMatch(label, @"\d"))
+                        {
+                            filteredFeatures.Add(feature);
+                        }
+                    }
+                }
+
+            var result = new System.Text.Json.Nodes.JsonObject
+            {
+                ["type"] = System.Text.Json.Nodes.JsonValue.Create(root.GetProperty("type").GetString()),
+                ["features"] = filteredFeatures
+            };
+
+                return Content(result.ToJsonString(), "application/json");
+            }
+
+        return Content(json, "application/json"); 
+
         }
         catch (Exception ex)
         {

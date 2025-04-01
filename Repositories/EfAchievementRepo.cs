@@ -299,6 +299,18 @@ namespace BouvetBackend.Repositories
             int ecoFriendlyCount = _context.TransportEntry
             .Count(te => te.UserId == userId && (te.Method == "cycling" || te.Method == "bus"));
 
+            // Midnight ride achievement
+            var midnightAchievementIds = _context.Achievement
+                .Where(a => a.ConditionType == "midnight_ride")
+                .Select(a => a.AchievementId)
+                .ToList();
+
+            var earnedMidnightIds = _context.UserAchievement
+                .Where(ua => ua.UserId == userId && midnightAchievementIds.Contains(ua.AchievementId))
+                .Select(ua => ua.AchievementId)
+                .ToHashSet(); 
+
+
 
             // Map progress by condition type
             foreach (var a in _context.Achievement)
@@ -336,7 +348,7 @@ namespace BouvetBackend.Repositories
                         break;
 
                     case "midnight_ride":
-                        progress[a.AchievementId] = 0; // cannot track this after-the-fact
+                        progress[a.AchievementId] = earnedMidnightIds.Contains(a.AchievementId) ? 1 : 0;
                         break;
 
                     case "achievement_count":
