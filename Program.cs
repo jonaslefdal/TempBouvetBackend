@@ -33,7 +33,9 @@ builder.Services.AddCors(options =>
     builder.Services.AddOpenApi();
 
     builder.Services.AddDbContext<DataContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .UseLoggerFactory(LoggerFactory.Create(builder => builder.AddConsole()))
+           .EnableSensitiveDataLogging(false));
 
     builder.Services.AddScoped<IApiRepository, EfApiRepository>();
     builder.Services.AddScoped<IUserRepository, EfUserRepository>();

@@ -10,12 +10,12 @@ namespace BouvetBackend.Entities
         [Key]
         public int TeamId { get; set; }
         [Required]
-        public string Name { get; set; }
+        public required string Name { get; set; }
         // Foreign key to Company: Each team belongs to one company.
         [ForeignKey("Company")]
         public int CompanyId { get; set; }
         public int MaxMembers { get; set; } = 5;
-        public virtual Company Company { get; set; }
+        public required virtual Company Company { get; set; }
         // Navigation property for users in this team.
         public virtual ICollection<Users> Users { get; set; } = new List<Users>();
     }

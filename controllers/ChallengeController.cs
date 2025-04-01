@@ -7,6 +7,7 @@ using BouvetBackend.Models.UserModel;
 using BouvetBackend.Models.CompleteChallengeModel;
 using Microsoft.AspNetCore.Authorization;
 using BouvetBackend.Extensions;
+using System.Diagnostics;
 
 
 namespace BouvetBackend.Controllers
@@ -231,6 +232,9 @@ namespace BouvetBackend.Controllers
         [HttpPost("custom/complete")]
         public async Task<IActionResult> CompleteCustomChallenge([FromBody] CompleteChallengeRequest request)
         {
+
+            var sv = new Stopwatch();
+
             var email = User.FindFirst("emails")?.Value;
 
             if (string.IsNullOrEmpty(email))
@@ -275,8 +279,12 @@ namespace BouvetBackend.Controllers
             {
                 user.TotalScore += attempt.PointsAwarded;
             }
+            
+            Console.WriteLine($"Time taken: {sv.ElapsedMilliseconds}ms");        
 
-            await _achievementRepository.CheckForAchievements(user.UserId, "custom");
+            await _achievementRepository.CheckForAchievements(user.UserId, "custom" );
+
+            Console.WriteLine($"Time taken after: {sv.ElapsedMilliseconds}ms");  
 
             return Ok(new
             {

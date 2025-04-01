@@ -43,11 +43,11 @@ namespace BouvetBackend.Controllers
 
         }
 
-        [HttpPost("upsert")]
-public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
-{
-    try
+    [HttpPost("upsert")]
+    public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
     {
+        try
+        {
         var email = User.FindFirst("emails")?.Value;
 
             if (string.IsNullOrEmpty(email))
@@ -79,13 +79,13 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
             double distanceKm = await _distanceService.GetDistance(startingCoordinates, fixedDestination);
             
             // Calculate co2 saved for this submission.
-            double co2utslipp = CalculateCo2(distanceKm, model.Method ?? string.Empty);
+            double co2utslipp = CalculateCo2(distanceKm, model.Method);
 
             // Calculate points based on the distance.
-            int calculatedPoints = CalculatePoints(distanceKm, model.Method ?? string.Empty);
+            int calculatedPoints = CalculatePoints(distanceKm, model.Method );
             
             // Calculate saved Money based on the distance.
-            double calculatedMoney = CalculateMoneySaved(distanceKm, model.Method ?? string.Empty);
+            double calculatedMoney = CalculateMoneySaved(distanceKm, model.Method );
 
             var entity = new TransportEntry
             {
@@ -100,7 +100,7 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
 
             _transportEntryRepository.Upsert(entity);
 
-            await _achievementRepository.CheckForAchievements(user.UserId, model.Method ?? string.Empty, entity);
+            await _achievementRepository.CheckForAchievements(user.UserId, model.Method, entity);
             await _challengeProgressService.CheckAndUpdateProgress(user.UserId, entity.Method);
 
             return Ok(new 
@@ -116,7 +116,7 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
         }
     }
 
-        private int CalculatePoints(double distanceKm, string mode)
+        private int CalculatePoints(double distanceKm, Methode mode)
         {
             // CO₂ (grams) per km for each mode.
             // car is carpooling so divided by 2
@@ -127,20 +127,20 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
             const double walkCO2 = 0.0;
 
             double modeCO2;
-            switch (mode.ToLower())
+            switch (mode)
             {
-                case "car":
+                case Methode.Car:
                     // Car here represents carpooling.
                     modeCO2 = carpoolCO2;
                     break;
-                case "bus":
+                case Methode.Bus:
                     modeCO2 = busCO2;
                     break;
-                case "cycling":
+                case Methode.Cycling:
                     modeCO2 = cycleCO2;
                     break;
-                case "walking":
-                    modeCO2 = walkCO2;
+                case Methode.Walking:
+                modeCO2 = walkCO2;
                     break;
                 default:
                     modeCO2 = singleOccupantCO2;
@@ -167,16 +167,16 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
 
             // Define max caps per mode.
             double maxCap;
-            switch (mode.ToLower())
+            switch (mode)
             {
-                case "bus":
+                case Methode.Bus:
                     maxCap = 300;
                     break;
-                case "cycling":
-                case "walking":
+                case Methode.Cycling:
+                case Methode.Walking:
                     maxCap = 500;
                     break;
-                case "car":
+                case Methode.Car:
                 default:
                     maxCap = 200;
                     break;
@@ -188,15 +188,15 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
             return (int)Math.Round(final);
         }
 
-        private double CalculateCo2(double distanceKm, string mode)
+        private double CalculateCo2(double distanceKm, Methode mode)
         {
             
-        var emissionFactors = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+        var emissionFactors = new Dictionary<Methode, double>()
         {
-            { "car", 0.2 },      
-            { "bus", 0.1 },      
-            { "cycling", 0.0 },  
-            { "walking", 0.0 }   
+            { Methode.Car, 0.2 },      
+            { Methode.Bus, 0.1 },      
+            { Methode.Cycling, 0.0 },  
+            { Methode.Walking, 0.0 }   
         };
         
         double defaultEmission = 0.2;
@@ -207,14 +207,14 @@ public async Task<IActionResult> Post([FromBody] TransportEntryModel model)
         return Math.Max(savedCo2, 0); // Ensure no negative values
         }
 
-        private double CalculateMoneySaved(double distanceKm, string mode)
+        private double CalculateMoneySaved(double distanceKm, Methode mode)
         {
-            var costPerKm = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            var costPerKm = new Dictionary<Methode, double>()
             {
-                { "car", 5.00 },      // 5 kr per km (drivstoff, vedlikehold, verdifall)
-                { "bus", 1.19 },      // Basert på 711 kr/mnd og 600 km gjennomsnitt
-                { "cycling", 0.00 },  
-                { "walking", 0.00 }   
+                { Methode.Car, 5.00 },      // 5 kr per km (drivstoff, vedlikehold, verdifall)
+                { Methode.Bus, 1.19 },      // Basert på 711 kr/mnd og 600 km gjennomsnitt
+                { Methode.Cycling, 0.00 },  
+                { Methode.Walking, 0.00 }   
             };
 
             double defaultCost = 5.00; // Standard kostnad (bil)

@@ -4,6 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BouvetBackend.Entities
 {
+    public enum  Methode { Car, Cycling, Walking, Bus, Custom }
+
     [Table("transportEntries")]
     public class TransportEntry
     {
@@ -13,7 +15,7 @@ namespace BouvetBackend.Entities
         public int UserId { get; set; }
         public virtual Users ?Users { get; set; }
         [Required]
-        public string ?Method { get; set; }
+        public required Methode Method { get; set; }
         public double Co2 { get; set; }
         public double DistanceKm { get; set; }
         public double MoneySaved { get; set; }
