@@ -276,20 +276,7 @@ namespace BouvetBackend.Controllers
                 user.TotalScore += attempt.PointsAwarded;
             }
 
-             _ = Task.Run(async () =>
-            {
-                try
-                {
-                // Fire-and-forget achievement checking.
-                    using var scope = _serviceProvider.CreateScope();
-                    var achievementRepository = scope.ServiceProvider.GetRequiredService<IAchievementRepository>();
-                    await achievementRepository.CheckForAchievements(user.UserId, "custom");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Achievement check failed: {ex.Message}");
-                }
-            });
+            await _achievementRepository.CheckForAchievements(user.UserId, "custom");
 
             return Ok(new
             {
