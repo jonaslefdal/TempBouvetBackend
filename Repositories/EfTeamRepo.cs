@@ -32,11 +32,9 @@ namespace BouvetBackend.Repositories
                 .ToList();
         }
 
-        public Teams Get(int teamId)
+        public Teams? Get(int teamId)
         {
-            return _context.Teams
-                        .Include(t => t.Users)
-                        .FirstOrDefault(t => t.TeamId == teamId);
+            return _context.Teams.Include(t => t.Users).FirstOrDefault(t => t.TeamId == teamId);
         }
 
         public void Upsert(Teams team)
@@ -56,16 +54,17 @@ namespace BouvetBackend.Repositories
         
         public List<Teams> GetAll()
         {
-            return _context.Teams.ToList();
+            return _context.Teams
+                .Include(t => t.Users) 
+                .ToList();
         }
         
-        public Teams GetTeamWithMembers(int teamId)
+        public Teams? GetTeamWithMembers(int teamId)
         {
             return _context.Teams
                         .Where(t => t.TeamId == teamId)
                         .Include(t => t.Users) 
                         .FirstOrDefault();
         }
-
     }
 }

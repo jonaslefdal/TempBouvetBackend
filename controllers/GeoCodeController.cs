@@ -17,7 +17,7 @@ public class GeocodeController : ControllerBase
     {
         _httpClient = httpClient;
 
-        _orsApiKey = configuration["OpenRouteService:ApiKey"];
+        _orsApiKey = configuration["OpenRouteService:ApiKey"]!;
         if (string.IsNullOrEmpty(_orsApiKey))
         {
             throw new ArgumentNullException("OpenRouteService:ApiKey is not configured");

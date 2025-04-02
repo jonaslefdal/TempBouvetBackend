@@ -32,7 +32,7 @@ namespace BouvetBackend.Repositories
         }
 
         // Retrieves a specific attempt by its ID
-        public UserChallengeProgress Get(int id)
+        public UserChallengeProgress? Get(int id)
         {
             return _context.UserChallengeProgress.FirstOrDefault(a => a.UserChallengeProgressId == id);
         }

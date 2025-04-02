@@ -195,7 +195,7 @@ namespace BouvetBackend.Controllers
             {
                 double userProgress;
 
-                if (challenge.RequiredTransportMethod == "custom")
+                if (challenge.RequiredTransportMethod == Methode.Custom)
                 {
                     userProgress = await _challengeProgressRepository
                         .GetUserAttemptCountForChallengeThisWeekAsync(user.UserId, challenge.ChallengeId, startOfWeek);
@@ -215,7 +215,9 @@ namespace BouvetBackend.Controllers
                 {
                     ChallengeId = challenge.ChallengeId,
                     Description = challenge.Description,
-                    Method = challenge.RequiredTransportMethod,
+                    Method = challenge.ConditionType == "Custom" 
+                        ? "custom" 
+                        : challenge.RequiredTransportMethod.ToString().ToLower(),
                     Points = challenge.Points,
                     Type = challenge.ConditionType,
                     RequiredCount = challenge.MaxAttempts,
@@ -225,15 +227,12 @@ namespace BouvetBackend.Controllers
             }
 
             return Ok(result);
-
         }
 
 
         [HttpPost("custom/complete")]
         public async Task<IActionResult> CompleteCustomChallenge([FromBody] CompleteChallengeRequest request)
         {
-
-            var sv = new Stopwatch();
 
             var email = User.FindFirst("emails")?.Value;
 
@@ -252,7 +251,7 @@ namespace BouvetBackend.Controllers
                 return NotFound("User not found.");
 
             var challenge = _challengeRepository.Get(request.ChallengeId);
-            if (challenge == null || challenge.RequiredTransportMethod != "custom")
+            if (challenge == null || challenge.RequiredTransportMethod != Methode.Custom)
                 return BadRequest("Invalid or non-custom challenge.");
 
             DateTime weekStart = DateTime.UtcNow.StartOfWeek(DayOfWeek.Monday);
@@ -270,7 +269,7 @@ namespace BouvetBackend.Controllers
                 UserId = user.UserId,
                 ChallengeId = challenge.ChallengeId,
                 PointsAwarded = (attemptsThisWeek + 1 == challenge.MaxAttempts) ? challenge.Points : 0,
-                AttemptedAt = request.ActivityDate ?? DateTime.UtcNow
+                AttemptedAt = DateTime.UtcNow
             };
 
             _challengeProgressRepository.Upsert(attempt); 
@@ -278,13 +277,20 @@ namespace BouvetBackend.Controllers
             if (attempt.PointsAwarded > 0)
             {
                 user.TotalScore += attempt.PointsAwarded;
+            } 
+
+            if (attempt.PointsAwarded > 0)
+            {
+                var entries = _transportRepository.GetEntriesForUser(user.UserId);
+                var userChallenges = _challengeProgressRepository.GetAttemptsByUserId(user.UserId);
+
+                await _achievementRepository.CheckForAchievements(
+                    user.UserId,
+                    challenge.RequiredTransportMethod,
+                    entries,
+                    userChallenges
+                );
             }
-            
-            Console.WriteLine($"Time taken: {sv.ElapsedMilliseconds}ms");        
-
-            await _achievementRepository.CheckForAchievements(user.UserId, "custom" );
-
-            Console.WriteLine($"Time taken after: {sv.ElapsedMilliseconds}ms");  
 
             return Ok(new
             {

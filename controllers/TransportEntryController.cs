@@ -20,6 +20,7 @@ namespace BouvetBackend.Controllers
         private readonly IGeocodingService _geocodingService;
         private readonly IDistanceService _distanceService;
         private readonly ChallengeProgressService _challengeProgressService;
+        private readonly IUserChallengeProgressRepository _challengeProgressRepository;
 
 
         private const double FIXED_LONGITUDE = 7.9652276;
@@ -30,7 +31,8 @@ namespace BouvetBackend.Controllers
          IServiceProvider serviceProvider,
          IGeocodingService geocodingService,
          IDistanceService distanceService,
-         ChallengeProgressService challengeProgressService)
+         ChallengeProgressService challengeProgressService,
+         IUserChallengeProgressRepository challengeProgressRepository)
         {
             _transportEntryRepository = transportEntryRepository;
             _userRepository = userRepository;
@@ -39,8 +41,7 @@ namespace BouvetBackend.Controllers
             _geocodingService = geocodingService;
             _distanceService = distanceService;
             _challengeProgressService = challengeProgressService;
-
-
+            _challengeProgressRepository = challengeProgressRepository;
         }
 
     [HttpPost("upsert")]
@@ -48,48 +49,30 @@ namespace BouvetBackend.Controllers
     {
         try
         {
-        var email = User.FindFirst("emails")?.Value;
-
+            var email = User.FindFirst("emails")?.Value;
             if (string.IsNullOrEmpty(email))
-            {
                 return BadRequest("Email claim missing.");
-            }
 
             if (model == null || string.IsNullOrEmpty(model.StartingAddress))
-            {
                 return BadRequest("Invalid data.");
-            }
 
             var user = _userRepository.GetUserByEmail(email);
             if (user == null)
-            {
                 return NotFound("User not found.");
-            }
 
-            // The address of the user.
             var startingCoordinates = await _geocodingService.GetCoordinates(model.StartingAddress);
             if (startingCoordinates == null)
-            {
                 return BadRequest("Could not geocode the starting address.");
-            }
 
-            // The fixed adress. Set to Hennig Olsen Is.
             var fixedDestination = new double[] { FIXED_LONGITUDE, FIXED_LATITUDE };
-
             double distanceKm = await _distanceService.GetDistance(startingCoordinates, fixedDestination);
-            
-            // Calculate co2 saved for this submission.
             double co2utslipp = CalculateCo2(distanceKm, model.Method);
-
-            // Calculate points based on the distance.
-            int calculatedPoints = CalculatePoints(distanceKm, model.Method );
-            
-            // Calculate saved Money based on the distance.
-            double calculatedMoney = CalculateMoneySaved(distanceKm, model.Method );
+            int calculatedPoints = CalculatePoints(distanceKm, model.Method);
+            double calculatedMoney = CalculateMoneySaved(distanceKm, model.Method);
 
             var entity = new TransportEntry
             {
-                UserId = user.UserId, 
+                UserId = user.UserId,
                 Method = model.Method,
                 Points = calculatedPoints,
                 Co2 = co2utslipp,
@@ -100,14 +83,17 @@ namespace BouvetBackend.Controllers
 
             _transportEntryRepository.Upsert(entity);
 
-            await _achievementRepository.CheckForAchievements(user.UserId, model.Method, entity);
-            await _challengeProgressService.CheckAndUpdateProgress(user.UserId, entity.Method);
+            var entries = _transportEntryRepository.GetEntriesForUser(user.UserId);
+            var attempts = _challengeProgressRepository.GetAttemptsByUserId(user.UserId);
 
-            return Ok(new 
-            { 
-                message = "Data received successfully.", 
-                distanceKm, 
-                calculatedPoints 
+            await _achievementRepository.CheckForAchievements(user.UserId, model.Method, entries, attempts, entity);
+            await _challengeProgressService.CheckAndUpdateProgress(user.UserId, entity.Method, entries, attempts);
+
+            return Ok(new
+            {
+                message = "Data received successfully.",
+                distanceKm,
+                calculatedPoints
             });
         }
         catch (Exception ex)
@@ -115,6 +101,7 @@ namespace BouvetBackend.Controllers
             return StatusCode(500, $"Internal error: {ex.Message}");
         }
     }
+
 
         private int CalculatePoints(double distanceKm, Methode mode)
         {
@@ -224,7 +211,5 @@ namespace BouvetBackend.Controllers
             double savedMoney = (defaultCost - selectedCost) * distanceKm;
             return Math.Max(savedMoney, 0);
         }
-
-
     }
 }

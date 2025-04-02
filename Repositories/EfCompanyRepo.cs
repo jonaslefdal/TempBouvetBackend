@@ -19,7 +19,7 @@ namespace BouvetBackend.Repositories
         return _context.Company.ToList();
     }
 
-    public Company GetById(int companyId)
+    public Company? GetById(int companyId)
     {
         return _context.Company.FirstOrDefault(a => a.CompanyId == companyId);
     }
@@ -29,6 +29,20 @@ namespace BouvetBackend.Repositories
         _context.Company.Add(company);
         _context.SaveChanges();
     }
+    public List<object> GetCompanyScores()
+    {
+        return _context.Company
+            .Select(company => new
+            {
+                CompanyId = company.CompanyId,
+                Name = company.Name,
+                TotalPoints = _context.Users
+                    .Where(u => u.CompanyId == company.CompanyId)
+                    .Sum(u => (int?)u.TotalScore) ?? 0
+            })
+            .ToList<object>();
+    }
+
 }
 
 }

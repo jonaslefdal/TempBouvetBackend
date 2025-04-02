@@ -15,7 +15,7 @@ namespace BouvetBackend.Entities
         [ForeignKey("Company")]
         public int CompanyId { get; set; }
         public int MaxMembers { get; set; } = 5;
-        public required virtual Company Company { get; set; }
+        public virtual Company? Company { get; set; }
         // Navigation property for users in this team.
         public virtual ICollection<Users> Users { get; set; } = new List<Users>();
     }

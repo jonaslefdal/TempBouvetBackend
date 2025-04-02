@@ -13,8 +13,7 @@ namespace BouvetBackend.Entities
         public int TransportEntryId { get; set; }
         [ForeignKey("Users")]
         public int UserId { get; set; }
-        public virtual Users ?Users { get; set; }
-        [Required]
+        public virtual Users? Users { get; set; }
         public required Methode Method { get; set; }
         public double Co2 { get; set; }
         public double DistanceKm { get; set; }

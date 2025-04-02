@@ -2,6 +2,7 @@ using BouvetBackend.Entities;
 using BouvetBackend.DataAccess;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace BouvetBackend.Repositories
 {
@@ -61,7 +62,7 @@ namespace BouvetBackend.Repositories
                 .Sum(te => te.MoneySaved);
         }
 
-        public TransportEntry Get(int TransportEntryId)
+        public TransportEntry? Get(int TransportEntryId)
         {
             return _context.TransportEntry.FirstOrDefault(a => a.TransportEntryId == TransportEntryId);
         }
@@ -75,14 +76,22 @@ namespace BouvetBackend.Repositories
         {
             return _context.TransportEntry.Count(te => te.UserId == userId);
         }
-        public int GetTransportEntryCount(int userId, string method, DateTime since)
+        public int GetTransportEntryCount(int userId, Methode method, DateTime since)
         {
             return _context.TransportEntry.Count(te =>
                 te.UserId == userId &&
                 te.Method == method &&
                 te.CreatedAt >= since);
         }
-        public int GetTransportDistanceCount(int userId, string method, DateTime since, double requiredDistanceKm)
+        public List<TransportEntry> GetEntriesForUser(int userId)
+        {
+            return _context.TransportEntry
+                .AsNoTracking()
+                .Where(te => te.UserId == userId)
+                .ToList();
+        }
+
+        public int GetTransportDistanceCount(int userId, Methode method, DateTime since, double requiredDistanceKm)
         {
             return _context.TransportEntry.Count(te =>
                 te.UserId == userId &&
@@ -91,7 +100,7 @@ namespace BouvetBackend.Repositories
                 te.DistanceKm >= requiredDistanceKm);
         }
 
-        public double GetTransportDistanceSum(int userId, string method, DateTime since)
+        public double GetTransportDistanceSum(int userId, Methode method, DateTime since)
         {
             return _context.TransportEntry
                 .Where(te => te.UserId == userId &&

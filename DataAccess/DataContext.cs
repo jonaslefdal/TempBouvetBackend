@@ -15,12 +15,16 @@ namespace BouvetBackend.DataAccess
 
             modelBuilder.Entity<API>().ToTable("api").HasKey(x => x.apiId);
             modelBuilder.Entity<TransportEntry>().ToTable("transportEntries").HasKey(x => x.TransportEntryId);
+            modelBuilder.Entity<TransportEntry>()
+            .Property(e => e.Method)
+            .HasConversion<int>(); 
             modelBuilder.Entity<Users>().ToTable("users").HasKey(x => x.UserId);
             modelBuilder.Entity<Challenge>().ToTable("challenges").HasKey(x => x.ChallengeId);
             modelBuilder.Entity<UserChallengeProgress>().ToTable("userChallengeProgress").HasKey(x => x.UserChallengeProgressId);
             modelBuilder.Entity<Company>().ToTable("companies").HasKey(x => x.CompanyId);
             modelBuilder.Entity<Teams>().ToTable("teams").HasKey(x => x.TeamId);
             modelBuilder.Entity<Achievement>().ToTable("achievement").HasKey(x => x.AchievementId);
+            modelBuilder.Entity<Achievement>().Property(a => a.ConditionType).HasConversion<string>();
             modelBuilder.Entity<UserAchievement>().ToTable("userachievement").HasKey(x => x.UserAchievementId);
 
             base.OnModelCreating(modelBuilder);

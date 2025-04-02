@@ -17,7 +17,7 @@ namespace BouvetBackend.Entities
         [Required]
         public int RotationGroup { get; set; }
         public int? MaxAttempts { get; set; }
-        public string? RequiredTransportMethod { get; set; }
+        public Methode RequiredTransportMethod { get; set; }
         public string? ConditionType { get; set; } // "Standard", "Custom", "Distance"
         public double? RequiredDistanceKm { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -41,7 +41,12 @@ namespace BouvetBackend.Repositories
         }
         public Challenge Get(int ChallengeId)
         {
-            return _context.Challenge.FirstOrDefault(a => a.ChallengeId == ChallengeId);
+            var challenge = _context.Challenge.FirstOrDefault(a => a.ChallengeId == ChallengeId);
+            if (challenge == null)
+            {
+                throw new KeyNotFoundException("ChallengeKey Null");
+            }
+            return challenge;
         }
 
         public List<Challenge> GetAll()

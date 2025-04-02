@@ -5,7 +5,7 @@ namespace BouvetBackend.Models.CompleteChallengeModel
     public class CompanyModel
     {
         public int CompanyId { get; set; }
-        public string ?Name { get; set; }
+        public required string Name { get; set; }
 
     }
 }

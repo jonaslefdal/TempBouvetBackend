@@ -14,12 +14,12 @@ namespace BouvetBackend.Repositories
             _context = context;
         }
 
-        public Users GetUserById(int userId)
+        public Users? GetUserById(int userId)
         {
             return _context.Users.FirstOrDefault(u => u.UserId == userId);
         }
 
-        public Users GetUserByEmail(string email)
+        public Users? GetUserByEmail(string email)
         {
             return _context.Users.FirstOrDefault(u => u.Email == email);
         }
@@ -56,7 +56,7 @@ namespace BouvetBackend.Repositories
         {
             return _context.Users.OrderByDescending(u => u.TotalScore).ToList();
         }
-        public Users GetUserByAzureId(string azureId)
+        public Users? GetUserByAzureId(string azureId)
         {
             return _context.Users.FirstOrDefault(u => u.AzureId == azureId);
         }

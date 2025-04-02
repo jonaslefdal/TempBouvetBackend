@@ -7,9 +7,9 @@ namespace BouvetBackend.Repositories
     public interface ITeamRepository
     {
         List<TeamModel> GetTeamsByCompanyId(int companyId);
-        Teams Get(int TeamId);
+        Teams? Get(int TeamId);
         void Upsert(Teams team);
         List<Teams> GetAll();
-        Teams GetTeamWithMembers(int teamId);
+        Teams? GetTeamWithMembers(int teamId);
     }
 }

@@ -5,32 +5,14 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace BouvetBackend.Models.TransportEntryModel
 {
-
-    public class CompositeViewModel
-    {
-        public TransportEntryModel ?TransportEntryModel { get; set; }
-            }
-    public class TransportEntryFullModel
-    {
-        public TransportEntryFullModel()
-        {
-            //UpsertModel = new TransportEntryModel();
-            TransportEntryModelList = new List<TransportEntryModel>();
-        }
-
-        public TransportEntryModel UpsertModel { get; set; }
-        public List<TransportEntryModel> TransportEntryModelList { get; set; }
-    }
-
     public class TransportEntryModel
     {
         public int UserId { get; set; }
-        public string ?Email { get; set; } 
         public required Methode Method { get; set; }  
         public double Co2 { get; set; }  
         public double DistanceKm { get; set; }  
         public double MoneySaved { get; set; }
-        public string? StartingAddress { get; set; }     
+        public required string StartingAddress { get; set; }     
     }
 }
 
