@@ -12,15 +12,22 @@ namespace BouvetBackend.Controllers
     {
         private readonly IAchievementRepository _achievementRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IUserChallengeProgressRepository _challengeProgressRepository;
+        private readonly ITransportEntryRepository _transportEntryRepository;
 
-        public AchievementFuncController(IAchievementRepository achievementRepository, IUserRepository userRepository)
+        public AchievementFuncController(IAchievementRepository achievementRepository, 
+        IUserRepository userRepository, 
+        IUserChallengeProgressRepository challengeProgressRepository,
+        ITransportEntryRepository transportEntryRepository)    
         {
             _achievementRepository = achievementRepository;
             _userRepository = userRepository;
+            _challengeProgressRepository = challengeProgressRepository; 
+            _transportEntryRepository = transportEntryRepository;  
         }
 
         [HttpGet("getUserAchievements")]
-        public IActionResult GetUserAchievements()
+        public async Task<IActionResult> GetUserAchievements()
         {
             var email = User.FindFirst("emails")?.Value;
             if (string.IsNullOrEmpty(email)) return BadRequest("Email claim missing.");
@@ -30,8 +37,11 @@ namespace BouvetBackend.Controllers
 
             var achievements = _achievementRepository.GetAll(); // total thresholds
             var earned = _achievementRepository.GetUserAchievements(user.UserId);
+            var entries = _transportEntryRepository.GetEntriesForUser(user.UserId);
+            var attempts = _challengeProgressRepository.GetAttemptsByUserId(user.UserId);
+            var progressMap = await _achievementRepository
+                .GetAchievementProgress(user.UserId, entries, attempts);
 
-            var progressMap = _achievementRepository.GetAchievementProgress(user.UserId);
 
             var result = achievements.Select(a =>
             {

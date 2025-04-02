@@ -10,11 +10,10 @@ namespace BouvetBackend.Entities
         [Key]
         public int UserId { get; set; }
         [Required]
-        public string? AzureId { get; set; }
+        public required string AzureId { get; set; }
         [Required]
+        public required string Email { get; set; }
         public string? Name { get; set; }
-        [Required]
-        public string? Email { get; set; }
 
         [ForeignKey("Company")]
         public int? CompanyId { get; set; }

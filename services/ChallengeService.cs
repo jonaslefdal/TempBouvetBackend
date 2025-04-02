@@ -17,65 +17,41 @@ namespace BouvetBackend.Services
             _context = context;
         }
     
-        public async Task CheckAndUpdateProgress(int userId, string method)
+        public async Task CheckAndUpdateProgress(int userId, Methode method, List<TransportEntry> entriesThisWeek, List<UserChallengeProgress> attemptsThisWeek)
+    {
+        DateTime weekStart = DateTime.UtcNow.StartOfWeek(DayOfWeek.Monday);
+
+        int countThisWeek = entriesThisWeek.Count(e => e.CreatedAt >= weekStart);
+        double distanceThisWeek = entriesThisWeek.Where(e => e.CreatedAt >= weekStart).Sum(e => e.DistanceKm);
+
+        int currentGroup = GetCurrentRotationGroup();
+
+        var challenges = await _context.Challenge
+            .Where(c => c.RotationGroup == currentGroup && c.RequiredTransportMethod == method)
+            .ToListAsync();
+
+        foreach (var challenge in challenges)
         {
-            DateTime weekStart = DateTime.UtcNow.StartOfWeek(DayOfWeek.Monday);
+            bool alreadyCompleted = attemptsThisWeek.Any(a =>
+                a.UserId == userId &&
+                a.ChallengeId == challenge.ChallengeId &&
+                a.AttemptedAt >= weekStart);
 
-            var entriesThisWeek = await _context.TransportEntry
-                .Where(te => te.UserId == userId && te.Method == method && te.CreatedAt >= weekStart)
-                .ToListAsync();
-
-            int countThisWeek = entriesThisWeek.Count;
-            Console.WriteLine($"DEBUG: User {userId}, Method: {method}, Entries this week: {countThisWeek}");
-
-            int currentGroup = GetCurrentRotationGroup();
-            Console.WriteLine($"DEBUG: Current RotationGroup: {currentGroup}");
-
-            var challenges = await _context.Challenge
-                .Where(c => c.RotationGroup == currentGroup && c.RequiredTransportMethod == method)
-                .ToListAsync();
-
-            Console.WriteLine($"DEBUG: Challenges matching: {challenges.Count}");
-
-            foreach (var challenge in challenges)
-            {
-                Console.WriteLine($"DEBUG: Challenge {challenge.ChallengeId}, RequiredCount: {challenge.MaxAttempts}");
+            if (alreadyCompleted)
+                continue;
 
             if (challenge.ConditionType == "Distance" && challenge.RequiredDistanceKm.HasValue)
             {
-                double distanceThisWeek = entriesThisWeek.Sum(e => e.DistanceKm);
                 if (distanceThisWeek >= challenge.RequiredDistanceKm.Value)
-                {
-                    bool alreadyCompleted = await _context.UserChallengeProgress.AnyAsync(a =>
-                        a.UserId == userId &&
-                        a.ChallengeId == challenge.ChallengeId &&
-                        a.AttemptedAt >= weekStart);
-
-                    if (!alreadyCompleted)
-                    {
-                        await CompleteChallengeForUser(userId, challenge);
-                    }
-                }
+                    await CompleteChallengeForUser(userId, challenge);
             }
             else if (challenge.MaxAttempts.HasValue && countThisWeek >= challenge.MaxAttempts.Value)
             {
-                bool alreadyCompleted = await _context.UserChallengeProgress.AnyAsync(a =>
-                    a.UserId == userId &&
-                    a.ChallengeId == challenge.ChallengeId &&
-                    a.AttemptedAt >= weekStart);
-
-                if (!alreadyCompleted)
-                {
-                    await CompleteChallengeForUser(userId, challenge);
-                }
-            }
-
-                else
-                {
-                    Console.WriteLine($"DEBUG: Challenge {challenge.ChallengeId} not yet eligible.");
-                }
+                await CompleteChallengeForUser(userId, challenge);
             }
         }
+    }
+
 
         private int GetCurrentRotationGroup()
         {

@@ -3,6 +3,22 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BouvetBackend.Entities
 {
+public enum AchievementCondition
+{
+    DistanceWalking,
+    DistanceCycling,
+    DistanceBus,
+    DistanceCar,
+
+    TotalEntries,
+
+    CustomChallengeCount,
+    PointsTotal,
+    Co2SavedTotal,
+    MoneySavedTotal,
+    UnlockedChallengeCount
+}
+
     [Table("achievements")]
     public class Achievement
     {
@@ -10,9 +26,8 @@ namespace BouvetBackend.Entities
         public int AchievementId { get; set; }
         [Required]
         public string Name { get; set; } = string.Empty;
-        [Required]
-        public string ConditionType { get; set; } = string.Empty; 
+        public required AchievementCondition ConditionType { get; set; } 
         public int Threshold { get; set; }
-        public string? Description { get; set; }
+        public required string Description { get; set; }
     }
 }

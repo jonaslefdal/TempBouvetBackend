@@ -39,7 +39,7 @@ namespace BouvetBackend.Controllers
 
         // All api calls togheter to save load times 
         [HttpGet("overview")]
-        public IActionResult GetProfileOverview()
+        public async Task<IActionResult> GetProfileOverview()
         {
             var email = User.FindFirst("emails")?.Value;
             if (string.IsNullOrEmpty(email))
@@ -50,9 +50,10 @@ namespace BouvetBackend.Controllers
                 return NotFound("User not found.");
 
             // Fetch profile related data
-            double totalCo2Savings = _transportEntryRepository.GetTotalCo2SavingsByUser(user.UserId);
-            int totalTravels = _transportEntryRepository.GetTotalTravelCountByUser(user.UserId);
-            double totalMoneySaved = _transportEntryRepository.GetTotalMoneySaved(user.UserId);
+            var entries = _transportEntryRepository.GetEntriesForUser(user.UserId);
+            double totalCo2Savings = entries.Sum(te => te.Co2);
+            int totalTravels = entries.Count;
+            double totalMoneySaved = entries.Sum(te => te.MoneySaved);
 
             // Calculate completed challenges
             var attempts = _challengeProgressRepository.GetAttemptsByUserId(user.UserId);
@@ -64,23 +65,69 @@ namespace BouvetBackend.Controllers
             // Fetch achievements data
             var achievements = _achievementRepository.GetAll();
             var earned = _achievementRepository.GetUserAchievements(user.UserId);
-            var progressMap = _achievementRepository.GetAchievementProgress(user.UserId);
+            var progressMap = await _achievementRepository
+    .GetAchievementProgress(user.UserId, entries, attempts);
+
+            var earnedIds = earned.Select(e => e.AchievementId).ToHashSet();
+
+            // Filter: earned + one next tier per type
+            var nextTiers = achievements
+                .GroupBy(a => a.ConditionType)
+                .Select(g => g.OrderBy(a => a.Threshold)
+                    .FirstOrDefault(a => !earnedIds.Contains(a.AchievementId)))
+                .Where(a => a != null)
+                .ToList();
+
+            var displayAchievements = achievements
+            .GroupBy(a => a.ConditionType)
+            .Select(group =>
+            {
+                var earnedForType = group
+                    .Where(a => earnedIds.Contains(a.AchievementId))
+                    .OrderByDescending(a => a.Threshold)
+                    .FirstOrDefault();
+
+                if (earnedForType != null)
+                {
+                    var nextTier = group
+                        .Where(a => a.Threshold > earnedForType.Threshold)
+                        .OrderBy(a => a.Threshold)
+                        .FirstOrDefault();
+
+                    return nextTier ?? earnedForType;
+                }
+
+                // If none earned, return first tier
+                return group.OrderBy(a => a.Threshold).First();
+            })
+            .Where(a => a != null)
+            .ToList();
 
             // Map achievements into AchievementDto list
-            var achievementsDto = achievements.Select(a => new AchievementDto
+           var achievementsDto = displayAchievements.Select(a =>
             {
-                AchievementId = a.AchievementId,
-                Name = a.Name,
-                Description = a.Description,
-                Total = a.Threshold,
-                Progress = progressMap.GetValueOrDefault(a.AchievementId, 0),
-                EarnedAt = earned.FirstOrDefault(e => e.AchievementId == a.AchievementId)?.EarnedAt
+                var tier = achievements
+                    .Where(x => x.ConditionType == a.ConditionType)
+                    .OrderBy(x => x.Threshold)
+                    .Select((x, index) => new { x.AchievementId, Tier = index + 1 })
+                    .FirstOrDefault(x => x.AchievementId == a.AchievementId)?.Tier ?? 1;
+
+                return new AchievementDto
+                {
+                    AchievementId = a.AchievementId,
+                    Name = a.Name,
+                    Description = a.Description,
+                    Total = a.Threshold,
+                    Progress = progressMap.GetValueOrDefault(a.AchievementId, 0),
+                    EarnedAt = earned.FirstOrDefault(e => e.AchievementId == a.AchievementId)?.EarnedAt,
+                    Tier = tier
+                };
             }).ToList();
 
-            var userModel = new UserModel
+            var userModel = new PublicUserModel
             {
-                Name = user.Name,
-                NickName = user.NickName,
+                Name = user.Name ?? "",
+                NickName = user.NickName ?? "",
                 TotalScore = user.TotalScore,
                 ProfilePicture = user.ProfilePicture
             };
@@ -96,7 +143,6 @@ namespace BouvetBackend.Controllers
             };
 
             return Ok(profileOverviewDto);
-
         }
 
         [HttpGet("allComp")]

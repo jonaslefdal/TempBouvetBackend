@@ -14,14 +14,14 @@ namespace BouvetBackend.Services
         public GeocodingService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
-            _orsApiKey = configuration["OpenRouteService:ApiKey"];
+            _orsApiKey = configuration["OpenRouteService:ApiKey"]!;
             if (string.IsNullOrEmpty(_orsApiKey))
             {
                 throw new ArgumentNullException("OpenRouteService:ApiKey is not configured");
             }
         }
 
-        public async Task<double[]> GetCoordinates(string address)
+        public async Task<double[]?> GetCoordinates(string address)
         {
             var url = $"https://api.openrouteservice.org/geocode/search?api_key={_orsApiKey}&text={Uri.EscapeDataString(address)}";
 
@@ -50,17 +50,17 @@ namespace BouvetBackend.Services
     // DTO classes to match the ORS Geocoding API response.
     public class ORSGeocodeResponse
     {
-        public ORSFeature[] Features { get; set; }
+        public required ORSFeature[] Features { get; set; }
     }
 
     public class ORSFeature
     {
-        public ORSGeometry Geometry { get; set; }
+        public required ORSGeometry Geometry { get; set; }
     }
 
     public class ORSGeometry
     {
         // Expected to be [longitude, latitude]
-        public double[] Coordinates { get; set; }
+        public required double[] Coordinates { get; set; }
     }
 }

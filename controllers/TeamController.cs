@@ -13,11 +13,13 @@ namespace BouvetBackend.Controllers
     {
         private readonly ITeamRepository _teamRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ICompanyRepository _companyRepository;
 
-        public TeamController(ITeamRepository teamRepository, IUserRepository userRepository)
+        public TeamController(ITeamRepository teamRepository, IUserRepository userRepository, ICompanyRepository companyRepository)
         {
             _teamRepository = teamRepository;
             _userRepository = userRepository;
+            _companyRepository = companyRepository;
         }
 
         // GET: api/team/company
@@ -189,10 +191,17 @@ namespace BouvetBackend.Controllers
                     TeamId = team.TeamId,
                     Name = team.Name,
                     MemberCount = team.Users != null ? team.Users.Count() : 0, 
-                    TeamTotalScore = team.Users.Sum(user => user.TotalScore),
+                    TeamTotalScore = team.Users != null ? team.Users.Sum(user => user.TotalScore) : 0,
                 }).ToList();
 
                 return Ok(leaderboard);
+            }
+
+            [HttpGet("companyScores")]
+            public IActionResult GetCompanyScores()
+            {
+                var scores = _companyRepository.GetCompanyScores();
+                return Ok(scores);
             }
     }
 }

@@ -5,9 +5,22 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http.HttpResults;
 using BouvetBackend.Extensions;
+using BouvetBackend.DTO;
 
 namespace BouvetBackend.Repositories
 {
+
+        /// <summary>
+        /// Lengde gåing, sykling, bussing og bul
+        /// totalt reister totalt for 4 Methode 
+        /// antall fullført custom challenges 
+        /// Nå en viss mengde poeng 
+        /// hvor mye co2 bespart
+        /// hvor mye penger bespart 
+        /// antall unclucked challenges 
+        /// </summary>
+
+
     public class EfAchievementRepository : IAchievementRepository
     {
         private readonly DataContext _context;
@@ -15,6 +28,37 @@ namespace BouvetBackend.Repositories
         public EfAchievementRepository(DataContext context)
         {
             _context = context;
+        }
+
+        private async Task<int> WeeklyCount(int userId, Methode method)
+        {
+            var weekStart = DateTime.UtcNow.StartOfWeek(DayOfWeek.Monday);
+            return await _context.TransportEntry
+                .CountAsync(te => te.UserId == userId && te.Method == method && te.CreatedAt >= weekStart);
+        }
+
+        private async Task<int> CountForMethod(int userId, Methode method)
+        {
+            return await _context.TransportEntry
+                .CountAsync(te => te.UserId == userId && te.Method == method);
+        }
+
+        private async Task<int> WeeklyTransportMethods(int userId)
+        {
+            var weekStart = DateTime.UtcNow.StartOfWeek(DayOfWeek.Monday);
+            return await _context.TransportEntry
+                .Where(te => te.UserId == userId && te.CreatedAt >= weekStart)
+                .Select(te => te.Method)
+                .Distinct()
+                .CountAsync();
+        }
+
+        private bool IsMidnightRide(TransportEntry? entry)
+        {
+            if (entry == null) return false;
+            var norwayTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Oslo");
+            var entryLocalTime = TimeZoneInfo.ConvertTimeFromUtc(entry.CreatedAt, norwayTimeZone);
+            return entryLocalTime.Hour >= 0 && entryLocalTime.Hour < 5;
         }
 
         public void Upsert(Achievement achievement)
@@ -51,189 +95,106 @@ namespace BouvetBackend.Repositories
             return _context.Achievement.ToList();
         }
 
-        public List<Achievement> GetByCondition(string conditionType)
+        public List<Achievement> GetByCondition(AchievementCondition conditionType)
         {
             return _context.Achievement.Where(a => a.ConditionType == conditionType).ToList();
         }
 
-        public async Task CheckForAchievements(int userId, string activityType, TransportEntry? entry = null)
+        private async Task<UserStats> GetUserStats(
+            int userId,
+            List<TransportEntry> entries,
+            List<UserChallengeProgress> userChallenges)
         {
-        var achievements = await _context.Achievement.ToListAsync();
-        var userAchievements = await _context.UserAchievement
-            .Where(ua => ua.UserId == userId)
-            .Select(ua => ua.AchievementId)
-            .ToListAsync();
+            var challengeIds = userChallenges.Select(p => p.ChallengeId).Distinct().ToList();
 
-        // Cycling achievement (if 10+ entries)
-        if (activityType == "cycling")
-        {
-            var cyclingCount = await _context.TransportEntry
-                .Where(a => a.UserId == userId && a.Method == "cycling")
-                .CountAsync();
+            // Only fetch the relevant challenges once
+            var challenges = await _context.Challenge
+                .Where(c => challengeIds.Contains(c.ChallengeId))
+                .ToListAsync();
 
-            var cyclingAchievement = achievements.FirstOrDefault(a => a.ConditionType == "cycling_count" && a.Threshold <= cyclingCount);
+            var totalDistanceByMethod = entries
+                .GroupBy(e => e.Method)
+                .ToDictionary(g => g.Key, g => g.Sum(e => e.DistanceKm));
 
-            if (cyclingAchievement != null && !userAchievements.Contains(cyclingAchievement.AchievementId))
+            return new UserStats
             {
-                await AwardAchievement(userId, cyclingAchievement);
-            }
+                TotalEntries = entries.Count,
+                TotalDistance = entries.Sum(e => e.DistanceKm),
+                BusDistance = entries.Where(e => e.Method == Methode.Bus).Sum(e => e.DistanceKm),
+                TotalPoints = entries.Sum(e => e.Points),
+                TotalCo2 = entries.Sum(e => e.Co2),
+                TotalMoney = entries.Sum(e => e.MoneySaved),
+                CustomChallengeCount = challenges.Count(c => c.RequiredTransportMethod == Methode.Custom),
+                EarnedAchievementCount = await _context.UserAchievement.CountAsync(ua => ua.UserId == userId),
+                UnlockedChallengeCount = challengeIds.Count(),
+                EcoFriendlyCount = entries.Count(e => e.Method == Methode.Cycling || e.Method == Methode.Bus),
+                LastEntryMethod = entries.LastOrDefault()?.Method,
+                LastEntryTimeUtc = entries.LastOrDefault()?.CreatedAt,
+                TotalDistanceByMethod = totalDistanceByMethod
+            };
         }
 
-        // Walking achievement (if 5+ entries in one week)
-        if (activityType == "walking")
+
+        public async Task CheckForAchievements(
+            int userId,
+            Methode method,
+            List<TransportEntry> entries,
+            List<UserChallengeProgress> userChallenges,
+            TransportEntry? entry = null)
         {
-            var oneWeekAgo = DateTime.UtcNow.AddDays(-7);
-            var walkingCount = await _context.TransportEntry
-                .Where(a => a.UserId == userId && a.Method == "walking" && a.CreatedAt >= oneWeekAgo)
-                .CountAsync();
+            var allAchievements = await _context.Achievement.ToListAsync();
+            var earned = await _context.UserAchievement
+                .Where(ua => ua.UserId == userId)
+                .ToListAsync();
+            var earnedIds = earned.Select(e => e.AchievementId).ToHashSet();
 
-            var walkingAchievement = achievements.FirstOrDefault(a => a.ConditionType == "walking_weekly" && a.Threshold <= walkingCount);
+            var stats = await GetUserStats(userId, entries, userChallenges);
 
-            if (walkingAchievement != null && !userAchievements.Contains(walkingAchievement.AchievementId))
+            // Group by condition and find the lowest unearned tier per type
+            var nextTiers = allAchievements
+                .GroupBy(a => a.ConditionType)
+                .Select(g => g.OrderBy(a => a.Threshold)
+                    .FirstOrDefault(a => !earnedIds.Contains(a.AchievementId)))
+                .Where(a => a != null)
+                .ToList();
+
+            foreach (var achievement in nextTiers)
             {
-                await AwardAchievement(userId, walkingAchievement);
-            }
+                if (achievement is null) continue;
 
-            }
-            // Custom challenge completions
-            if (activityType == "custom")
-            {
-                var customCount = await _context.UserChallengeProgress
-                    .Where(p => p.UserId == userId)
-                    .Join(_context.Challenge,
-                        progress => progress.ChallengeId,
-                        challenge => challenge.ChallengeId,
-                        (progress, challenge) => new { progress, challenge })
-                    .CountAsync(x => x.challenge.RequiredTransportMethod == "custom");
-
-                var customAchievements = achievements
-                    .Where(a => a.ConditionType == "custom_challenge_count" && a.Threshold <= customCount)
-                    .Where(a => !userAchievements.Contains(a.AchievementId));
-
-                foreach (var achievement in customAchievements)
-                    await AwardAchievement(userId, achievement);
-            }
-
-            // Distance achievements
-            if (activityType == "walking" || activityType == "cycling")
-            {
-                var distance = await _context.TransportEntry
-                    .Where(a => a.UserId == userId && a.Method == activityType)
-                    .SumAsync(a => a.DistanceKm);
-
-                var distanceAchievements = achievements
-                    .Where(a => a.ConditionType == $"{activityType}_distance_total" && a.Threshold <= distance)
-                    .Where(a => !userAchievements.Contains(a.AchievementId));
-
-                foreach (var achievement in distanceAchievements)
-                    await AwardAchievement(userId, achievement);
-            }
-
-            // Versatile weekly achievement
-            if (activityType is "walking" or "cycling" or "bus" or "car")
-            {
-                var weekStart = DateTime.UtcNow.StartOfWeek(DayOfWeek.Monday);
-
-                var methodsUsed = await _context.TransportEntry
-                    .Where(te => te.UserId == userId && te.CreatedAt >= weekStart)
-                    .Select(te => te.Method)
-                    .Distinct()
-                    .ToListAsync();
-
-                if (methodsUsed.Count >= 4)
+                if (await IsAchievementMet(achievement.ConditionType, achievement.Threshold, stats, userId, method, entry))
                 {
-                    var versatile = achievements.FirstOrDefault(a => a.ConditionType == "versatile_weekly");
-                    if (versatile != null && !userAchievements.Contains(versatile.AchievementId))
-                    {
-                        await AwardAchievement(userId, versatile);
-                    }
+                    await AwardAchievement(userId, achievement);
                 }
             }
+        }
 
-            // Midnight ride achievement
 
-            TimeZoneInfo norwayTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Oslo");
-            DateTime entryLocalTime = TimeZoneInfo.ConvertTimeFromUtc(entry.CreatedAt, norwayTimeZone);
-
-            if (activityType != null && entryLocalTime.Hour >= 0 && entryLocalTime.Hour < 5)
+        private Task<bool> IsAchievementMet(
+            AchievementCondition condition,
+            int threshold,
+            UserStats stats,
+            int userId,
+            Methode method,
+            TransportEntry? entry)
+        {
+            var result = condition switch
             {
-                var midnight = achievements.FirstOrDefault(a => a.ConditionType == "midnight_ride");
-                if (midnight != null && !userAchievements.Contains(midnight.AchievementId))
-                {
-                    await AwardAchievement(userId, midnight);
-                }
-            }
+                AchievementCondition.DistanceWalking => stats.TotalDistanceByMethod.TryGetValue(Methode.Walking, out var walk) && walk >= threshold,
+                AchievementCondition.DistanceCycling => stats.TotalDistanceByMethod.TryGetValue(Methode.Cycling, out var cycle) && cycle >= threshold,
+                AchievementCondition.DistanceBus => stats.TotalDistanceByMethod.TryGetValue(Methode.Bus, out var bus) && bus >= threshold,
+                AchievementCondition.DistanceCar => stats.TotalDistanceByMethod.TryGetValue(Methode.Car, out var car) && car >= threshold,
+                AchievementCondition.TotalEntries => stats.TotalEntries >= threshold,
+                AchievementCondition.CustomChallengeCount => stats.CustomChallengeCount >= threshold,
+                AchievementCondition.PointsTotal => stats.TotalPoints >= threshold,
+                AchievementCondition.Co2SavedTotal => stats.TotalCo2 >= threshold,
+                AchievementCondition.MoneySavedTotal => stats.TotalMoney >= threshold,
+                AchievementCondition.UnlockedChallengeCount => stats.UnlockedChallengeCount >= threshold,
+                _ => false
+            };
 
-            // Carpooling achievement
-            if (activityType == "car") {
-            var carCount = await _context.TransportEntry
-                .Where(a => a.UserId == userId && a.Method == "car")
-                .CountAsync();
-            
-            var carAchievements = achievements
-                .Where(a => a.ConditionType == "car_count" && a.Threshold <= carCount)
-                .Where(a => !userAchievements.Contains(a.AchievementId));
-
-            foreach (var a in carAchievements)
-                await AwardAchievement(userId, a);
-            }
-
-            // Bus achievement
-            if (activityType == "bus") {
-            var busCount = await _context.TransportEntry
-                .Where(a => a.UserId == userId && a.Method == "bus")
-                .CountAsync();
-            
-            var busAchievements = achievements
-                .Where(a => a.ConditionType == "bus_count" && a.Threshold <= busCount)
-                .Where(a => !userAchievements.Contains(a.AchievementId));
-
-            foreach (var a in busAchievements)
-                await AwardAchievement(userId, a);
+            return Task.FromResult(result);
         }
-
-        var totalCount = await _context.TransportEntry
-            .Where(a => a.UserId == userId)
-            .CountAsync();
-
-        var totalAchievements = achievements
-            .Where(a => a.ConditionType == "total_entries" && a.Threshold <= totalCount)
-            .Where(a => !userAchievements.Contains(a.AchievementId));
-
-        foreach (var a in totalAchievements)
-            await AwardAchievement(userId, a);
-
-        // Check and award achievement_count type explicitly
-        var earnedAchievementCount = await _context.UserAchievement
-            .CountAsync(ua => ua.UserId == userId);
-
-        // Get achievements matching the achievement_count condition
-        var achievementCountAchievements = achievements
-            .Where(a => a.ConditionType == "achievement_count" && a.Threshold <= earnedAchievementCount)
-            .Where(a => !userAchievements.Contains(a.AchievementId))
-            .ToList();
-
-        foreach (var achievement in achievementCountAchievements)
-        {
-            await AwardAchievement(userId, achievement);
-        }
-
-        // Eco-warrior achievement (cycling or bus combined entries)
-        var ecoFriendlyCount = await _context.TransportEntry
-            .Where(te => te.UserId == userId && (te.Method == "cycling" || te.Method == "bus"))
-            .CountAsync();
-
-        var ecoAchievements = achievements
-            .Where(a => a.ConditionType == "eco_warrior" && a.Threshold <= ecoFriendlyCount)
-            .Where(a => !userAchievements.Contains(a.AchievementId))
-            .ToList();
-
-        foreach (var achievement in ecoAchievements)
-        {
-            await AwardAchievement(userId, achievement);
-        }
-
-    }
 
         private async Task AwardAchievement(int userId, Achievement achievement)
         {
@@ -247,126 +208,76 @@ namespace BouvetBackend.Repositories
             _context.UserAchievement.Add(userAchievement);
             await _context.SaveChangesAsync();            
         }
-        public Dictionary<int, int> GetAchievementProgress(int userId)
+
+
+        public async Task<Dictionary<int, int>> GetAchievementProgress(
+        int userId,
+        List<TransportEntry> entries,
+        List<UserChallengeProgress> userChallenges)
+    {
+        var progress = new Dictionary<int, int>();
+
+        var stats = await GetUserStats(userId, entries, userChallenges);
+        var allAchievements = _context.Achievement.ToList();
+
+        foreach (var a in allAchievements)
         {
-            var progress = new Dictionary<int, int>();
-
-            var now = DateTime.UtcNow;
-            var weekStart = now.StartOfWeek(DayOfWeek.Monday);
-            var oneWeekAgo = now.AddDays(-7);
-
-            // Total entries
-            var totalEntries = _context.TransportEntry.Count(te => te.UserId == userId);
-
-            // Distance per method
-            var distances = _context.TransportEntry
-                .Where(te => te.UserId == userId)
-                .GroupBy(te => te.Method)
-                .Select(g => new { Method = g.Key, Distance = g.Sum(te => te.DistanceKm) })
-                .ToDictionary(x => x.Method, x => x.Distance);
-
-            // Count per method
-            var counts = _context.TransportEntry
-                .Where(te => te.UserId == userId)
-                .GroupBy(te => te.Method)
-                .Select(g => new { Method = g.Key, Count = g.Count() })
-                .ToDictionary(x => x.Method, x => x.Count);
-
-            // Walking last 7 days
-            var walkingWeekly = _context.TransportEntry
-                .Count(te => te.UserId == userId && te.Method == "walking" && te.CreatedAt >= oneWeekAgo);
-
-            // Custom challenge completions
-            var customCompleted = _context.UserChallengeProgress
-                .Where(p => p.UserId == userId)
-                .Join(_context.Challenge,
-                    p => p.ChallengeId,
-                    c => c.ChallengeId,
-                    (p, c) => c)
-                .Count(c => c.RequiredTransportMethod == "custom");
-
-            // Methods used this week
-            var methodsUsedThisWeek = _context.TransportEntry
-                .Where(te => te.UserId == userId && te.CreatedAt >= weekStart)
-                .Select(te => te.Method)
-                .Distinct()
-                .Count();
-
-            // Total achievement count
-            int achievementCount = _context.UserAchievement.Count(ua => ua.UserId == userId);
-
-            // Eco-warrior achievement 
-            int ecoFriendlyCount = _context.TransportEntry
-            .Count(te => te.UserId == userId && (te.Method == "cycling" || te.Method == "bus"));
-
-            // Midnight ride achievement
-            var midnightAchievementIds = _context.Achievement
-                .Where(a => a.ConditionType == "midnight_ride")
-                .Select(a => a.AchievementId)
-                .ToList();
-
-            var earnedMidnightIds = _context.UserAchievement
-                .Where(ua => ua.UserId == userId && midnightAchievementIds.Contains(ua.AchievementId))
-                .Select(ua => ua.AchievementId)
-                .ToHashSet(); 
-
-
-
-            // Map progress by condition type
-            foreach (var a in _context.Achievement)
+            switch (a.ConditionType)
             {
-                switch (a.ConditionType)
-                {
-                    case "total_entries":
-                        progress[a.AchievementId] = totalEntries;
-                        break;
+            case AchievementCondition.DistanceWalking:
+                progress[a.AchievementId] = (int)Math.Floor(
+                    entries.Where(te => te.Method == Methode.Walking).Sum(te => te.DistanceKm));
+                break;
 
-                    case "walking_weekly":
-                        progress[a.AchievementId] = walkingWeekly;
-                        break;
+            case AchievementCondition.DistanceCycling:
+                progress[a.AchievementId] = (int)Math.Floor(
+                    entries.Where(te => te.Method == Methode.Cycling).Sum(te => te.DistanceKm));
+                break;
 
-                    case "custom_challenge_count":
-                        progress[a.AchievementId] = customCompleted;
-                        break;
+            case AchievementCondition.DistanceBus:
+                progress[a.AchievementId] = (int)Math.Floor(
+                    entries.Where(te => te.Method == Methode.Bus).Sum(te => te.DistanceKm));
+                break;
 
-                    case "versatile_weekly":
-                        progress[a.AchievementId] = methodsUsedThisWeek;
-                        break;
+            case AchievementCondition.DistanceCar:
+                progress[a.AchievementId] = (int)Math.Floor(
+                    entries.Where(te => te.Method == Methode.Car).Sum(te => te.DistanceKm));
+                break;
 
-                    case "cycling_count":
-                    case "walking_count":
-                    case "bus_count":
-                    case "car_count":
-                        var type = a.ConditionType.Replace("_count", "");
-                        progress[a.AchievementId] = counts.GetValueOrDefault(type, 0);
-                        break;
+            case AchievementCondition.TotalEntries:
+                progress[a.AchievementId] = entries.Count;
+                break;
 
-                    case "cycling_distance_total":
-                    case "walking_distance_total":
-                        var dType = a.ConditionType.Replace("_distance_total", "");
-                        progress[a.AchievementId] = (int)Math.Floor(distances.GetValueOrDefault(dType, 0));
-                        break;
+            case AchievementCondition.CustomChallengeCount:
+                progress[a.AchievementId] = stats.CustomChallengeCount;
+                break;
 
-                    case "midnight_ride":
-                        progress[a.AchievementId] = earnedMidnightIds.Contains(a.AchievementId) ? 1 : 0;
-                        break;
+            case AchievementCondition.PointsTotal:
+                progress[a.AchievementId] = stats.TotalPoints;
+                break;
 
-                    case "achievement_count":
-                        progress[a.AchievementId] = achievementCount;
-                        break;
+            case AchievementCondition.Co2SavedTotal:
+                progress[a.AchievementId] = (int)Math.Floor(stats.TotalCo2);
+                break;
 
-                    case "eco_warrior":
-                        progress[a.AchievementId] = ecoFriendlyCount;  
-                        break;
+            case AchievementCondition.MoneySavedTotal:
+                progress[a.AchievementId] = (int)Math.Floor(stats.TotalMoney);
+                break;
 
-                    default:
-                        progress[a.AchievementId] = 0;
-                        break;
-                }
+            case AchievementCondition.UnlockedChallengeCount:
+                progress[a.AchievementId] = stats.UnlockedChallengeCount;
+                break;
+
+            default:
+                progress[a.AchievementId] = 0;
+                break;
             }
-
-            return progress;
         }
+
+        return progress;
+    }
+
+
 
     }
 }

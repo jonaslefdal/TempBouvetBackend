@@ -34,7 +34,12 @@ namespace BouvetBackend.Repositories
 
         public API Get(int apiId)
         {
-            return _context.API.FirstOrDefault(a => a.apiId == apiId);
+            var api = _context.API.FirstOrDefault(a => a.apiId == apiId);
+            if (api == null)
+            {
+                throw new KeyNotFoundException("ApiKey Null");
+            }
+            return api;
         }
 
         public List<API> GetAll()

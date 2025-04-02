@@ -15,7 +15,7 @@ namespace BouvetBackend.Services
         public DistanceService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
-            _orsApiKey = configuration["OpenRouteService:ApiKey"];
+            _orsApiKey = configuration["OpenRouteService:ApiKey"]!;
             if (string.IsNullOrEmpty(_orsApiKey))
             {
                 throw new ArgumentNullException("OpenRouteService:ApiKey is not configured");
@@ -68,12 +68,12 @@ namespace BouvetBackend.Services
     // DTO classes to match the ORS Directions API response structure.
     public class ORSRouteResponse
     {
-        public ORSRoute[] Routes { get; set; }
+        public required ORSRoute[] Routes { get; set; }
     }
 
     public class ORSRoute
     {
-        public ORSSummary Summary { get; set; }
+        public required ORSSummary Summary { get; set; }
     }
 
     public class ORSSummary

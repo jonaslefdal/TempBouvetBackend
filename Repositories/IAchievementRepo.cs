@@ -8,10 +8,19 @@ namespace BouvetBackend.Repositories
         void Upsert(Achievement achievement);
         Achievement? Get(int achievementId);
         List<Achievement> GetAll();
-        List<Achievement> GetByCondition(string conditionType);
-        Task CheckForAchievements(int userId, string activityType, TransportEntry? entry = null);
-        List<UserAchievement> GetUserAchievements(int id);
-        Dictionary<int, int> GetAchievementProgress(int userId);
+        List<Achievement> GetByCondition(AchievementCondition conditionType);
 
+        Task CheckForAchievements(
+            int userId,
+            Methode method,
+            List<TransportEntry> entries,
+            List<UserChallengeProgress> userChallenges,
+            TransportEntry? entry = null
+        );
+        List<UserAchievement> GetUserAchievements(int id);
+        Task<Dictionary<int, int>> GetAchievementProgress(
+            int userId,
+            List<TransportEntry> entries,
+            List<UserChallengeProgress> userChallenges);
     }
 }

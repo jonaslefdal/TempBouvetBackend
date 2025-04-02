@@ -66,16 +66,56 @@ VALUES
 ('Fullfør en valgfri fysisk aktivitet med andre', 50, 10, 1, 'custom', 'Custom', NULL, NOW());
 
 
-INSERT INTO Achievement ("AchievementId", "Name", "Description", "ConditionType", "Threshold")
-VALUES
-  (1, 'Miljøkriger', 'Bruk kollektivtransport eller sykkel 10 ganger.', 'eco_warrior', 10),
-  (2, 'Skrittmester', 'Gå 5 ganger i løpet av én uke.', 'walking_weekly', 5),
-  (3, 'Bussentusiast', 'Ta bussen 20 ganger.', 'bus_count', 20),
-  (4, 'Syklist', 'Sykle totalt 100 km.', 'cycling_distance_total', 100),
-  (5, 'Samkjøringshelt', 'Samkjør 5 ganger.', 'car_count', 5),
-  (6, '15 Reiser', 'Registrer 15 reiser totalt.', 'total_entries', 15),
-  (7, 'Allsidig Reisende', 'Bruk 4 forskjellige transportmidler i én uke.', 'versatile_weekly', 1),
-  (8, 'Midnattsreisende', 'Reis mellom kl. 00:00 og 05:00.', 'midnight_ride', 1),
-  (9, 'Utfordringsmester', 'Fullfør 3 egendefinerte utfordringer.', 'custom_challenge_count', 3),
-  (10, 'Prestasjonssamler', 'Lås opp 5 forskjellige prestasjoner.', 'achievement_count', 5);
+
+INSERT INTO achievement ("AchievementId", "Name", "ConditionType", "Threshold", "Description") VALUES
+-- Walking
+(1,  'Turgåer I',        0, 10,   'Gå totalt 10 km'),
+(2,  'Turgåer II',       0, 50,   'Gå totalt 50 km'),
+(3,  'Turgåer III',      0, 100,  'Gå totalt 100 km'),
+
+-- Cycling
+(4,  'Syklist I',        1, 10,   'Sykle totalt 10 km'),
+(5,  'Syklist II',       1, 50,   'Sykle totalt 50 km'),
+(6,  'Syklist III',      1, 100,  'Sykle totalt 100 km'),
+
+-- Bus
+(7,  'Bussreisende I',   2, 10,   'Reis 10 km med buss'),
+(8,  'Bussreisende II',  2, 50,   'Reis 50 km med buss'),
+(9,  'Bussreisende III', 2, 100,  'Reis 100 km med buss'),
+
+-- Car
+(10, 'Samkjører I',      3, 10,   'Kjør 10 km med bil'),
+(11, 'Samkjører II',     3, 50,   'Kjør 50 km med bil'),
+(12, 'Samkjører III',    3, 100,  'Kjør 100 km med bil'),
+
+-- Total entries
+(13, 'Utforsker I',      4, 5,    'Registrer 5 reiser totalt'),
+(14, 'Utforsker II',     4, 20,   'Registrer 20 reiser totalt'),
+(15, 'Utforsker III',    4, 50,   'Registrer 50 reiser totalt'),
+
+-- Custom challenges
+(16, 'Egen vei I',       5, 1,    'Fullfør 1 egendefinert utfordring'),
+(17, 'Egen vei II',      5, 5,    'Fullfør 5 egendefinerte utfordringer'),
+(18, 'Egen vei III',     5, 10,   'Fullfør 10 egendefinerte utfordringer'),
+
+-- Points
+(19, 'Poengjeger I',     6, 100,  'Samle 100 poeng'),
+(20, 'Poengjeger II',    6, 500,  'Samle 500 poeng'),
+(21, 'Poengjeger III',   6, 1000, 'Samle 1000 poeng'),
+
+-- CO₂ saved
+(22, 'CO₂-sparer I',     7, 5,    'Spar 5 kg CO₂'),
+(23, 'CO₂-sparer II',    7, 20,   'Spar 20 kg CO₂'),
+(24, 'CO₂-sparer III',   7, 50,   'Spar 50 kg CO₂'),
+
+-- Money saved
+(25, 'Pengebesparer I',  8, 50,   'Spar 50 kroner'),
+(26, 'Pengebesparer II', 8, 200,  'Spar 200 kroner'),
+(27, 'Pengebesparer III',8, 500,  'Spar 500 kroner'),
+
+-- Challenges unlocked
+(28, 'Opplåser I',       9, 3,    'Lås opp 3 unike utfordringer'),
+(29, 'Opplåser II',      9, 6,    'Lås opp 6 unike utfordringer'),
+(30, 'Opplåser III',     9, 10,   'Lås opp 10 unike utfordringer');
+
 

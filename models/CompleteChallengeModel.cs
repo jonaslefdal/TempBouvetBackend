@@ -6,7 +6,6 @@ namespace BouvetBackend.Models.CompleteChallengeModel
     {
         [Required]
         public int ChallengeId { get; set; }
-        public DateTime? ActivityDate { get; set; }
 
     }
 }
