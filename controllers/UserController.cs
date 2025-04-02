@@ -22,12 +22,8 @@ namespace BouvetBackend.Controllers
         }
 
         [HttpPost("upsert")]
-        public IActionResult UpsertUser([FromBody] UserModel userModel)
+        public IActionResult UpsertUser()
         {
-            if (userModel == null)
-            {
-                return BadRequest("Invalid user data.");
-            }
 
             var azureId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var email = User.FindFirst("emails")?.Value; 
@@ -68,7 +64,7 @@ namespace BouvetBackend.Controllers
         }
 
         [HttpPost("updateProfile")]
-        public IActionResult UpdateProfile([FromBody] UserModel model)
+        public IActionResult UpdateProfile([FromBody] UpdateProfile model)
         {
             var email = User.FindFirst("emails")?.Value;
 
@@ -84,7 +80,6 @@ namespace BouvetBackend.Controllers
             {
                 return BadRequest("Ugyldig profilbilde.");
             }
-
 
             // Update nickname on the existing user
             user.NickName = model.NickName;

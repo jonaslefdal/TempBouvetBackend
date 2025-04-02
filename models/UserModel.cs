@@ -29,4 +29,18 @@ namespace BouvetBackend.Models.UserModel
         public int? TeamId { get; set; }
         public string? ProfilePicture { get; set; }
     }
+
+    public class UpdateProfileOnboarding
+    {
+        public int CompanyId { get; set; }
+        public string? NickName { get; set; }
+        public string? Address { get; set; }
+    }
+
+    public class UpdateProfile
+    {
+        public string? NickName { get; set; }
+        public string? ProfilePicture { get; set; }
+        public string? Address { get; set; }
+    }
 }

@@ -178,7 +178,7 @@ namespace BouvetBackend.Controllers
         }
 
         [HttpPut("companySet")]
-        public IActionResult SetUserCompany([FromBody] UserModel userModel)
+        public IActionResult SetUserCompany([FromBody] UpdateProfileOnboarding userModel)
         {
             if (userModel == null)
             {
