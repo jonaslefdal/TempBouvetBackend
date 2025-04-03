@@ -190,6 +190,7 @@ namespace BouvetBackend.Repositories
                 AchievementCondition.Co2SavedTotal => stats.TotalCo2 >= threshold,
                 AchievementCondition.MoneySavedTotal => stats.TotalMoney >= threshold,
                 AchievementCondition.UnlockedChallengeCount => stats.UnlockedChallengeCount >= threshold,
+                AchievementCondition.AchievementsUnlockedCount => stats.EarnedAchievementCount >= threshold,
                 _ => false
             };
 
@@ -266,6 +267,10 @@ namespace BouvetBackend.Repositories
 
             case AchievementCondition.UnlockedChallengeCount:
                 progress[a.AchievementId] = stats.UnlockedChallengeCount;
+                break;
+
+            case AchievementCondition.AchievementsUnlockedCount:
+                progress[a.AchievementId] = stats.EarnedAchievementCount;
                 break;
 
             default:

@@ -16,7 +16,8 @@ public enum AchievementCondition
     PointsTotal,
     Co2SavedTotal,
     MoneySavedTotal,
-    UnlockedChallengeCount
+    UnlockedChallengeCount,
+    AchievementsUnlockedCount
 }
 
     [Table("achievements")]
