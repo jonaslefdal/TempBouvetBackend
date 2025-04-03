@@ -5,11 +5,33 @@ INSERT INTO companies ("Name") VALUES
 ('Company B');
 
 -- Insert four users
-INSERT INTO users ("AzureId", "Name", "Email", "CompanyId", "TotalScore") VALUES
-('azure-uuid-1', 'Alice Johnson', 'alice@example.com', 1, 1200),
-('azure-uuid-2', 'Bob Smith', 'bob@example.com', 1, 900),
-('azure-uuid-3', 'Charlie Brown', 'charlie@example.com', 2, 1500),
-('azure-uuid-4', 'Diana Prince', 'diana@example.com', 2, 1100);
+INSERT INTO users ("AzureId", "Name", "NickName", "Email", "CompanyId", "TeamId", "TotalScore") VALUES
+('azure-uuid-101', 'Emma Hansen', 'Emma', 'emma.hansen@example.com', 1, 1, 7243),
+('azure-uuid-102', 'Jonas Berg', 'Jonas', 'jonas.berg@example.com', 2, 1, 8391),
+('azure-uuid-103', 'Ingrid Larsen', 'Ingrid', 'ingrid.larsen@example.com', 1, 1, 5120),
+
+('azure-uuid-104', 'Oskar Nilsen', 'Oskar', 'oskar.nilsen@example.com', 2, 2, 9502),
+('azure-uuid-105', 'Sofie Aas', 'Sofie', 'sofie.aas@example.com', 1, 2, 6133),
+('azure-uuid-106', 'Marius Solberg', 'Marius', 'marius.solberg@example.com', 2, 2, 7730),
+
+('azure-uuid-107', 'Ida Johansen', 'Ida', 'ida.johansen@example.com', 1, 3, 8850),
+('azure-uuid-108', 'Henrik Olsen', 'Henrik', 'henrik.olsen@example.com', 2, 3, 5217),
+('azure-uuid-109', 'Nora Lie', 'Nora', 'nora.lie@example.com', 1, 3, 9034),
+
+('azure-uuid-110', 'Emil Kristoffersen', 'Emil', 'emil.kristoffersen@example.com', 2, 4, 9943),
+('azure-uuid-111', 'Linnea Evensen', 'Linnea', 'linnea.evensen@example.com', 1, 4, 6001),
+('azure-uuid-112', 'Lars Hagen', 'Lars', 'lars.hagen@example.com', 2, 4, 7305),
+
+('azure-uuid-113', 'Thea Andersen', 'Thea', 'thea.andersen@example.com', 1, 5, 8052),
+('azure-uuid-114', 'Sander Moe', 'Sander', 'sander.moe@example.com', 2, 5, 9609),
+('azure-uuid-115', 'Mia Halvorsen', 'Mia', 'mia.halvorsen@example.com', 1, 5, 5487),
+
+('azure-uuid-116', 'Elias Bakken', 'Elias', 'elias.bakken@example.com', 2, 6, 7492),
+('azure-uuid-117', 'Aurora Skogen', 'Aurora', 'aurora.skogen@example.com', 1, 6, 8674),
+('azure-uuid-118', 'Noah Andresen', 'Noah', 'noah.andresen@example.com', 2, 6, 9940),
+
+('azure-uuid-119', 'Julie Tangen', 'Julie', 'julie.tangen@example.com', 1, 7, 6890),
+('azure-uuid-120', 'Oliver Brekke', 'Oliver', 'oliver.brekke@example.com', 2, 8, 9155);
 
 -- Insert Challenges
 INSERT INTO challenges

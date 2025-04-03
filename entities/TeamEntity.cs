@@ -11,6 +11,7 @@ namespace BouvetBackend.Entities
         public int TeamId { get; set; }
         [Required]
         public required string Name { get; set; }
+        public string? TeamProfilePicture { get; set; }
         // Foreign key to Company: Each team belongs to one company.
         [ForeignKey("Company")]
         public int CompanyId { get; set; }

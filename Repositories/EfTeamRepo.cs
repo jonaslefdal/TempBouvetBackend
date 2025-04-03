@@ -66,5 +66,15 @@ namespace BouvetBackend.Repositories
                         .Include(t => t.Users) 
                         .FirstOrDefault();
         }
+        public void EditTeam (EditTeamModel model)
+        {
+            var team = _context.Teams.FirstOrDefault(t => t.TeamId == model.TeamId);
+            if (team != null)
+            {
+                if (model.Name != null) team.Name = model.Name;
+                if (model.TeamProfilePicture != null) team.TeamProfilePicture = model.TeamProfilePicture;
+                _context.SaveChanges();
+            }
+        }
     }
 }

@@ -3,6 +3,7 @@ using BouvetBackend.Repositories;
 using BouvetBackend.Entities;
 using BouvetBackend.Models.TeamModel;
 using Microsoft.AspNetCore.Authorization;
+using System.Text.RegularExpressions;
 
 namespace BouvetBackend.Controllers
 {
@@ -149,6 +150,7 @@ namespace BouvetBackend.Controllers
             {
                 TeamId = team.TeamId,
                 Name = team.Name,
+                TeamProfilePicture = team.TeamProfilePicture,
                 TeamTotalScore = team.Users.Sum(u => u.TotalScore),
                 Members = team.Users.Select(u => new { u.UserId, u.NickName, u.TotalScore, u.ProfilePicture }).ToList()
             };
@@ -176,6 +178,51 @@ namespace BouvetBackend.Controllers
             return Ok(new { message = "You have left the team." });
         }
 
+        [HttpPut("editTeam")]
+        public IActionResult EditTeam([FromBody] EditTeamModel team)
+        {
+            if (team == null)
+                return BadRequest("Invalid team data.");
+
+            var email = User.FindFirst("emails")?.Value;
+            if (string.IsNullOrEmpty(email))
+                return BadRequest("Email claim missing.");
+
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+                return NotFound("User not found.");
+
+            if (user.CompanyId == null)
+            {
+                return StatusCode(428, new { message = "User has not completed onboarding." });
+            }
+            
+            if (user.TeamId != team.TeamId)
+            {
+                return BadRequest("User is not in the specified team.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(team.Name)) team.Name = team.Name.Trim();
+
+            
+            if (!string.IsNullOrEmpty(team.TeamProfilePicture) &&
+                !Regex.IsMatch(team.TeamProfilePicture, @"^teamAvatar\d+\.png$", RegexOptions.IgnoreCase))
+            {
+                return BadRequest("Ugyldig profilbilde.");
+            }
+
+            var entity = new EditTeamModel
+            {
+                TeamId = team.TeamId,
+                Name = team.Name,
+                TeamProfilePicture = team.TeamProfilePicture 
+            };
+
+            _teamRepository.EditTeam(entity);
+
+            return Ok(new { message = "Team upserted successfully." });
+        }
+
             [HttpGet("allTeams")]
             public IActionResult GetAllTeams()
             {
@@ -190,6 +237,7 @@ namespace BouvetBackend.Controllers
                 {
                     TeamId = team.TeamId,
                     Name = team.Name,
+                    TeamProfilePicture = team.TeamProfilePicture,
                     MemberCount = team.Users != null ? team.Users.Count() : 0, 
                     TeamTotalScore = team.Users != null ? team.Users.Sum(user => user.TotalScore) : 0,
                 }).ToList();
