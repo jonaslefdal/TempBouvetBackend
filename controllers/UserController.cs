@@ -27,10 +27,8 @@ namespace BouvetBackend.Controllers
 
             var azureId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var email = User.FindFirst("emails")?.Value; 
-            var givenName = User.FindFirst(ClaimTypes.GivenName)?.Value;    
-            var lastName = User.FindFirst(ClaimTypes.Surname)?.Value;    
-
-            var name = $"{givenName} {lastName}".Trim();
+            var displayName = User.FindFirst("name")?.Value ?? 
+                      User.FindFirst("displayName")?.Value;
 
             if (string.IsNullOrEmpty(azureId) || string.IsNullOrEmpty(email))
             {
@@ -41,7 +39,7 @@ namespace BouvetBackend.Controllers
             {
                 AzureId = azureId,
                 Email = email,
-                Name = name,
+                Name = displayName?.Trim() ?? "", 
                 TotalScore = 0
             };
 

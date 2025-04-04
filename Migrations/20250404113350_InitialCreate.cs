@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BouvetBackend.Migrations
 {
     /// <inheritdoc />
-    public partial class tableUpdates : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,7 +20,8 @@ namespace BouvetBackend.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: false),
                     ConditionType = table.Column<string>(type: "text", nullable: false),
-                    Threshold = table.Column<int>(type: "integer", nullable: false)
+                    Threshold = table.Column<int>(type: "integer", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -49,8 +50,11 @@ namespace BouvetBackend.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Description = table.Column<string>(type: "text", nullable: false),
                     Points = table.Column<int>(type: "integer", nullable: false),
-                    MaxAttempts = table.Column<int>(type: "integer", nullable: false),
                     RotationGroup = table.Column<int>(type: "integer", nullable: false),
+                    MaxAttempts = table.Column<int>(type: "integer", nullable: true),
+                    RequiredTransportMethod = table.Column<int>(type: "integer", nullable: false),
+                    ConditionType = table.Column<string>(type: "text", nullable: true),
+                    RequiredDistanceKm = table.Column<double>(type: "double precision", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -72,34 +76,15 @@ namespace BouvetBackend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "weeklychallenge",
-                columns: table => new
-                {
-                    WeeklyChallengeId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    WeekStartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ChallengeId = table.Column<int>(type: "integer", nullable: false),
-                    DisplayOrder = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_weeklychallenge", x => x.WeeklyChallengeId);
-                    table.ForeignKey(
-                        name: "FK_weeklychallenge_challenges_ChallengeId",
-                        column: x => x.ChallengeId,
-                        principalTable: "challenges",
-                        principalColumn: "ChallengeId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "teams",
                 columns: table => new
                 {
                     TeamId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    CompanyId = table.Column<int>(type: "integer", nullable: false)
+                    TeamProfilePicture = table.Column<string>(type: "text", nullable: true),
+                    CompanyId = table.Column<int>(type: "integer", nullable: false),
+                    MaxMembers = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -119,13 +104,14 @@ namespace BouvetBackend.Migrations
                     UserId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     AzureId = table.Column<string>(type: "text", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: true),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: true),
                     CompanyId = table.Column<int>(type: "integer", nullable: true),
                     TotalScore = table.Column<int>(type: "integer", nullable: false),
                     NickName = table.Column<string>(type: "text", nullable: true),
                     Address = table.Column<string>(type: "text", nullable: true),
-                    TeamId = table.Column<int>(type: "integer", nullable: true)
+                    TeamId = table.Column<int>(type: "integer", nullable: true),
+                    ProfilePicture = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -149,9 +135,10 @@ namespace BouvetBackend.Migrations
                     TransportEntryId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     UserId = table.Column<int>(type: "integer", nullable: false),
-                    Method = table.Column<string>(type: "text", nullable: false),
+                    Method = table.Column<int>(type: "integer", nullable: false),
                     Co2 = table.Column<double>(type: "double precision", nullable: false),
                     DistanceKm = table.Column<double>(type: "double precision", nullable: false),
+                    MoneySaved = table.Column<double>(type: "double precision", nullable: false),
                     Points = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -194,10 +181,10 @@ namespace BouvetBackend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "userChallengeAttempts",
+                name: "userChallengeProgress",
                 columns: table => new
                 {
-                    UserChallengeAttemptId = table.Column<int>(type: "integer", nullable: false)
+                    UserChallengeProgressId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     UserId = table.Column<int>(type: "integer", nullable: false),
                     ChallengeId = table.Column<int>(type: "integer", nullable: false),
@@ -206,15 +193,15 @@ namespace BouvetBackend.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_userChallengeAttempts", x => x.UserChallengeAttemptId);
+                    table.PrimaryKey("PK_userChallengeProgress", x => x.UserChallengeProgressId);
                     table.ForeignKey(
-                        name: "FK_userChallengeAttempts_challenges_ChallengeId",
+                        name: "FK_userChallengeProgress_challenges_ChallengeId",
                         column: x => x.ChallengeId,
                         principalTable: "challenges",
                         principalColumn: "ChallengeId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_userChallengeAttempts_users_UserId",
+                        name: "FK_userChallengeProgress_users_UserId",
                         column: x => x.UserId,
                         principalTable: "users",
                         principalColumn: "UserId",
@@ -242,13 +229,13 @@ namespace BouvetBackend.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_userChallengeAttempts_ChallengeId",
-                table: "userChallengeAttempts",
+                name: "IX_userChallengeProgress_ChallengeId",
+                table: "userChallengeProgress",
                 column: "ChallengeId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_userChallengeAttempts_UserId",
-                table: "userChallengeAttempts",
+                name: "IX_userChallengeProgress_UserId",
+                table: "userChallengeProgress",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -260,11 +247,6 @@ namespace BouvetBackend.Migrations
                 name: "IX_users_TeamId",
                 table: "users",
                 column: "TeamId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_weeklychallenge_ChallengeId",
-                table: "weeklychallenge",
-                column: "ChallengeId");
         }
 
         /// <inheritdoc />
@@ -280,19 +262,16 @@ namespace BouvetBackend.Migrations
                 name: "userachievement");
 
             migrationBuilder.DropTable(
-                name: "userChallengeAttempts");
-
-            migrationBuilder.DropTable(
-                name: "weeklychallenge");
+                name: "userChallengeProgress");
 
             migrationBuilder.DropTable(
                 name: "achievement");
 
             migrationBuilder.DropTable(
-                name: "users");
+                name: "challenges");
 
             migrationBuilder.DropTable(
-                name: "challenges");
+                name: "users");
 
             migrationBuilder.DropTable(
                 name: "teams");

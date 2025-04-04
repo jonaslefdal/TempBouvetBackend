@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BouvetBackend.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250402035212_NullHandling")]
-    partial class NullHandling
+    [Migration("20250404113350_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -143,6 +143,9 @@ namespace BouvetBackend.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TeamProfilePicture")
                         .HasColumnType("text");
 
                     b.HasKey("TeamId");
