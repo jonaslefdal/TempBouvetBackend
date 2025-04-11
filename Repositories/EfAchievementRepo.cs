@@ -150,19 +150,13 @@ namespace BouvetBackend.Repositories
 
             var stats = await GetUserStats(userId, entries, userChallenges);
 
-            // Group by condition and find the lowest unearned tier per type
-            var nextTiers = allAchievements
-                .GroupBy(a => a.ConditionType)
-                .Select(g => g.OrderBy(a => a.Threshold)
-                    .FirstOrDefault(a => !earnedIds.Contains(a.AchievementId)))
-                .Where(a => a != null)
+            var newlyEarned = allAchievements
+                .Where(a => !earnedIds.Contains(a.AchievementId))
                 .ToList();
 
-            foreach (var achievement in nextTiers)
+            foreach (var achievement in newlyEarned)
             {
-                if (achievement is null) continue;
-
-                if (await IsAchievementMet(achievement.ConditionType, achievement.Threshold, stats, userId, method, entry))
+                if (IsAchievementMet(achievement.ConditionType, achievement.Threshold, stats))
                 {
                     await AwardAchievement(userId, achievement);
                 }
@@ -170,15 +164,12 @@ namespace BouvetBackend.Repositories
         }
 
 
-        private Task<bool> IsAchievementMet(
+        private bool IsAchievementMet(
             AchievementCondition condition,
             int threshold,
-            UserStats stats,
-            int userId,
-            Methode method,
-            TransportEntry? entry)
+            UserStats stats)
         {
-            var result = condition switch
+            return condition switch
             {
                 AchievementCondition.DistanceWalking => stats.TotalDistanceByMethod.TryGetValue(Methode.Walking, out var walk) && walk >= threshold,
                 AchievementCondition.DistanceCycling => stats.TotalDistanceByMethod.TryGetValue(Methode.Cycling, out var cycle) && cycle >= threshold,
@@ -193,8 +184,6 @@ namespace BouvetBackend.Repositories
                 AchievementCondition.AchievementsUnlockedCount => stats.EarnedAchievementCount >= threshold,
                 _ => false
             };
-
-            return Task.FromResult(result);
         }
 
         private async Task AwardAchievement(int userId, Achievement achievement)
