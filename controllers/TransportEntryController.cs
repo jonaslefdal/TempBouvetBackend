@@ -98,7 +98,12 @@ namespace BouvetBackend.Controllers
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Internal error: {ex.Message}");
+            Console.WriteLine("Transport upsert failed: " + ex.Message);
+            return StatusCode(503, new
+            {
+                message = "Klarte ikke å beregne reise akkurat nå.",
+                detail = ex.Message
+            });
         }
     }
 
