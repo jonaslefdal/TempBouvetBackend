@@ -216,5 +216,34 @@ namespace BouvetBackend.Controllers
             double savedMoney = (defaultCost - selectedCost) * distanceKm;
             return Math.Max(savedMoney, 0);
         }
+
+        [HttpGet("missing-today")]
+        [AllowAnonymous] 
+        public IActionResult GetUsersMissingToday()
+        {
+            try
+            {
+                var allUsers = _userRepository.GetAllUsers(); 
+                var today = DateTime.UtcNow.Date;
+
+                var missingUsers = allUsers
+                    .Where(user =>
+                        !_transportEntryRepository
+                            .GetEntriesForUser(user.UserId)
+                            .Any(e => e.CreatedAt.Date == today))
+                    .Select(user => new {
+                        user.UserId,
+                        user.Email
+                    })
+                    .ToList();
+
+                return Ok(missingUsers);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Feil ved henting av manglende brukere: " + ex.Message);
+                return StatusCode(500, new { message = "Klarte ikke hente data." });
+            }
+        }
     }
 }
