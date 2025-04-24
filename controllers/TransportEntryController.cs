@@ -59,6 +59,11 @@ namespace BouvetBackend.Controllers
             if (user == null)
                 return NotFound("User not found.");
 
+            if (user.CompanyId == null)
+            {
+                return StatusCode(428, new { message = "User has not completed onboarding." });
+            }
+
             var startingCoordinates = await _geocodingService.GetCoordinates(model.StartingAddress);
             if (startingCoordinates == null)
                 return BadRequest("Could not geocode the starting address.");
@@ -69,7 +74,6 @@ namespace BouvetBackend.Controllers
             if (!string.IsNullOrEmpty(model.EndAddress))
             {
                 endCoords = await _geocodingService.GetCoordinates(model.EndAddress);
-                Console.WriteLine("Egendefinert adresse registrert: " + model.EndAddress);
 
                 var addressEntity = new EndUserAddress
                 {
@@ -87,11 +91,9 @@ namespace BouvetBackend.Controllers
                 {
                     case "Hennig-Olsen Is":
                         endCoords = new[] { 7.965228, 58.135811 };
-                        Console.WriteLine("Hennig-Olsen Is VALGT");
                         break;
                     case "Glencore Nikkelverk AS":
                         endCoords = new[] { 7.971252, 58.138777 };
-                        Console.WriteLine("Glencore Nikkelverk AS VALGT");
                         break;
                     default:
                         return BadRequest("Could not determine end address: missing address and no company fallback.");
