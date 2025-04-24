@@ -20,13 +20,15 @@ namespace BouvetBackend.Controllers
         private readonly IChallengeRepository _challengeRepository;
         private readonly IUserChallengeProgressRepository _challengeProgressRepository;
         private readonly IAchievementRepository _achievementRepository;
+        private readonly IEndUserAddressRepository _endUserAddressRepository;
 
         public ProfileController(ICompanyRepository companyRepository, 
         IUserRepository userRepository, 
         ITransportEntryRepository transportEntryRepository,
         IChallengeRepository challengeRepository,
         IUserChallengeProgressRepository challengeProgressRepository,
-        IAchievementRepository achievementRepository
+        IAchievementRepository achievementRepository,
+        IEndUserAddressRepository endUserAddressRepository
         )
         {
             _companyRepository = companyRepository;
@@ -35,6 +37,7 @@ namespace BouvetBackend.Controllers
             _challengeRepository = challengeRepository;
             _challengeProgressRepository = challengeProgressRepository;
             _achievementRepository = achievementRepository;
+            _endUserAddressRepository = endUserAddressRepository;
         }
 
         // All api calls togheter to save load times 
@@ -175,6 +178,29 @@ namespace BouvetBackend.Controllers
             }
             
             return Ok(user);
+        }
+
+        [HttpGet("getUserEndAddress")]
+        public IActionResult GetMyEndAddress()
+        {
+            // Assume the user's email is in the token
+            var email = User.FindFirst("emails")?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest("Email claim missing.");
+            }
+            
+            var user = _userRepository.GetUserByEmail(email);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+            var address = _endUserAddressRepository.GetUserEndAddress(user.UserId);
+            if (address == null)
+                return NotFound("No end address found for user.");
+
+            return Ok(address);
         }
 
         [HttpPut("companySet")]

@@ -6,7 +6,6 @@ using BouvetBackend.Models.UserModel;
 using BouvetBackend.Entities;
 using BouvetBackend.Repositories;
 using System.Text.RegularExpressions;
-using WebPush;
 using System.Text.Json;
 
 namespace BouvetBackend.Controllers 
@@ -110,41 +109,6 @@ namespace BouvetBackend.Controllers
             }).ToList(); 
 
             return Ok(leaderboard);
-        }
-
-       [HttpPost("send-on-demand")]
-        [Authorize]
-        public async Task<IActionResult> SendPushNow([FromBody] PushSubscriptionDto dto)
-        {
-            try
-            {
-                var vapidDetails = new VapidDetails(
-                    "mailto:kontakt@kortreist.no",
-                    "<BGVbkzjqmMeojDnVNUJghTFPPVO8M73_0EbHWdgXDgVnHrX73LxLM_6pmNJQencv7YmP8L4mOfazGhcaLPFLNbI>",
-                    "<WanLkrt9azF4RhPQvVC8cI3pVXCd8RuC8hok2iz5pAM>"
-                );
-
-                var subscription = new PushSubscription(
-                    dto.Endpoint,
-                    dto.Keys["p256dh"],
-                    dto.Keys["auth"]
-                );
-
-                var payload = JsonSerializer.Serialize(new
-                {
-                    title = "Påminnelse",
-                    message = "Du har ikke registrert dagens reise ennå 🚶‍♂️"
-                });
-
-                var client = new WebPushClient();
-                await client.SendNotificationAsync(subscription, payload, vapidDetails);
-
-                return Ok(new { message = "Push sent!" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
         }
 
     }

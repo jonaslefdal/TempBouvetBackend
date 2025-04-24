@@ -10,11 +10,9 @@ namespace BouvetBackend.Models.TransportEntryModel
         public int UserId { get; set; }
         public required Methode Method { get; set; }  
         public double Co2 { get; set; }  
+        public string? EndAddress {get; set;}
         public double DistanceKm { get; set; }  
         public double MoneySaved { get; set; }
         public required string StartingAddress { get; set; }     
     }
 }
-
-
-

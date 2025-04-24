@@ -21,10 +21,7 @@ namespace BouvetBackend.Controllers
         private readonly IDistanceService _distanceService;
         private readonly ChallengeProgressService _challengeProgressService;
         private readonly IUserChallengeProgressRepository _challengeProgressRepository;
-
-
-        private const double FIXED_LONGITUDE = 7.9652276;
-        private const double FIXED_LATITUDE = 58.1358112;
+        private readonly IEndUserAddressRepository _endUserAddressRepository;
 
         public TransportEntryController(ITransportEntryRepository transportEntryRepository, IUserRepository userRepository,
          IAchievementRepository achievementRepository, 
@@ -32,7 +29,8 @@ namespace BouvetBackend.Controllers
          IGeocodingService geocodingService,
          IDistanceService distanceService,
          ChallengeProgressService challengeProgressService,
-         IUserChallengeProgressRepository challengeProgressRepository)
+         IUserChallengeProgressRepository challengeProgressRepository,
+         IEndUserAddressRepository endUserAddressRepository)
         {
             _transportEntryRepository = transportEntryRepository;
             _userRepository = userRepository;
@@ -42,6 +40,7 @@ namespace BouvetBackend.Controllers
             _distanceService = distanceService;
             _challengeProgressService = challengeProgressService;
             _challengeProgressRepository = challengeProgressRepository;
+            _endUserAddressRepository = endUserAddressRepository;
         }
 
     [HttpPost("upsert")]
@@ -64,8 +63,42 @@ namespace BouvetBackend.Controllers
             if (startingCoordinates == null)
                 return BadRequest("Could not geocode the starting address.");
 
-            var fixedDestination = new double[] { FIXED_LONGITUDE, FIXED_LATITUDE };
-            double distanceKm = await _distanceService.GetDistance(startingCoordinates, fixedDestination);
+            double[]? endCoords = null;
+
+            // If an end‐address, try to geocode it
+            if (!string.IsNullOrEmpty(model.EndAddress))
+            {
+                endCoords = await _geocodingService.GetCoordinates(model.EndAddress);
+                Console.WriteLine("Egendefinert adresse registrert: " + model.EndAddress);
+
+                var addressEntity = new EndUserAddress
+                {
+                    UserId     = user.UserId,
+                    EndAddress = model.EndAddress,
+                };
+                _endUserAddressRepository.Upsert(addressEntity);
+            }
+
+            // If no end‐address, try to get it from the database
+            if (endCoords == null)
+            {
+                var companyName = _userRepository.GetUserCompany(user.UserId)?.Name;
+                switch (companyName)
+                {
+                    case "Hennig-Olsen Is":
+                        endCoords = new[] { 7.965228, 58.135811 };
+                        Console.WriteLine("Hennig-Olsen Is VALGT");
+                        break;
+                    case "Glencore Nikkelverk AS":
+                        endCoords = new[] { 7.971252, 58.138777 };
+                        Console.WriteLine("Glencore Nikkelverk AS VALGT");
+                        break;
+                    default:
+                        return BadRequest("Could not determine end address: missing address and no company fallback.");
+                }
+            }
+
+            double distanceKm = await _distanceService.GetDistance(startingCoordinates, endCoords);
             double co2utslipp = CalculateCo2(distanceKm, model.Method);
             int calculatedPoints = CalculatePoints(distanceKm, model.Method);
             double calculatedMoney = CalculateMoneySaved(distanceKm, model.Method);
@@ -106,7 +139,6 @@ namespace BouvetBackend.Controllers
             });
         }
     }
-
 
         private int CalculatePoints(double distanceKm, Methode mode)
         {
@@ -180,6 +212,19 @@ namespace BouvetBackend.Controllers
             return (int)Math.Round(final);
         }
 
+        // Set max distance for each mode in proportion to the points.
+        private double GetMaxRewardableDistance(Methode mode)
+        {
+            return mode switch
+            {
+                Methode.Car     => 11.11, // For 200 points
+                Methode.Bus     => 36.00, // For 300 points
+                Methode.Cycling => 17.36, // For 500 points
+                Methode.Walking => 17.36, // For 500 points
+                _               => 30.0
+            };
+        }
+
         private double CalculateCo2(double distanceKm, Methode mode)
         {
             
@@ -195,7 +240,8 @@ namespace BouvetBackend.Controllers
         double selectedEmission = emissionFactors.GetValueOrDefault(mode, defaultEmission);
 
         // Calculate saved CO2 by comparing with car usage
-        double savedCo2 = (defaultEmission - selectedEmission) * distanceKm;
+        double cappedDistance = Math.Min(distanceKm, GetMaxRewardableDistance(mode));
+        double savedCo2 = (defaultEmission - selectedEmission) * cappedDistance;
         return Math.Max(savedCo2, 0); // Ensure no negative values
         }
 
@@ -213,37 +259,9 @@ namespace BouvetBackend.Controllers
             double selectedCost = costPerKm.GetValueOrDefault(mode, defaultCost);
 
             // Beregn spart penger sammenlignet med bil
-            double savedMoney = (defaultCost - selectedCost) * distanceKm;
+            double cappedDistance = Math.Min(distanceKm, GetMaxRewardableDistance(mode));
+            double savedMoney = (defaultCost - selectedCost) * cappedDistance;
             return Math.Max(savedMoney, 0);
-        }
-
-        [HttpGet("missing-today")]
-        [AllowAnonymous] 
-        public IActionResult GetUsersMissingToday()
-        {
-            try
-            {
-                var allUsers = _userRepository.GetAllUsers(); 
-                var today = DateTime.UtcNow.Date;
-
-                var missingUsers = allUsers
-                    .Where(user =>
-                        !_transportEntryRepository
-                            .GetEntriesForUser(user.UserId)
-                            .Any(e => e.CreatedAt.Date == today))
-                    .Select(user => new {
-                        user.UserId,
-                        user.Email
-                    })
-                    .ToList();
-
-                return Ok(missingUsers);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Feil ved henting av manglende brukere: " + ex.Message);
-                return StatusCode(500, new { message = "Klarte ikke hente data." });
-            }
         }
     }
 }

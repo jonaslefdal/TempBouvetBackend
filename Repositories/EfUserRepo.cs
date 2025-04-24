@@ -60,5 +60,13 @@ namespace BouvetBackend.Repositories
         {
             return _context.Users.FirstOrDefault(u => u.AzureId == azureId);
         }
+        
+        public Company? GetUserCompany(int userId)
+        {
+            return _context.Users
+                    .Where(u => u.UserId == userId)
+                    .Select(u => u.Company)
+                    .FirstOrDefault();
+        }
     }
 }

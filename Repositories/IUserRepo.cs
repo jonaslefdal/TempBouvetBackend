@@ -11,5 +11,6 @@ namespace BouvetBackend.Repositories
         void InsertOrUpdateUser(Users user);
         void UpdateUserProfile(Users user);
         List<Users> GetAllUsers();
+        Company? GetUserCompany(int userId);
     }
 }

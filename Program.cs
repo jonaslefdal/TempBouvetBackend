@@ -51,6 +51,7 @@ builder.Services.AddCors(options =>
     builder.Services.AddScoped<ICompanyRepository, EfCompanyRepository>();
     builder.Services.AddScoped<ITeamRepository, EfTeamRepository>();
     builder.Services.AddScoped<IAchievementRepository, EfAchievementRepository>();
+    builder.Services.AddScoped<IEndUserAddressRepository, EfEndUserAddressRepository>();
     builder.Services.AddHttpClient<IGeocodingService, GeocodingService>();
     builder.Services.AddHttpClient<IDistanceService, DistanceService>();
     builder.Services.AddScoped<ChallengeProgressService>();

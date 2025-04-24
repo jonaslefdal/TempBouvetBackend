@@ -26,6 +26,7 @@ namespace BouvetBackend.DataAccess
             modelBuilder.Entity<Achievement>().ToTable("achievement").HasKey(x => x.AchievementId);
             modelBuilder.Entity<Achievement>().Property(a => a.ConditionType).HasConversion<string>();
             modelBuilder.Entity<UserAchievement>().ToTable("userachievement").HasKey(x => x.UserAchievementId);
+            modelBuilder.Entity<EndUserAddress>().ToTable("enduseraddress").HasKey(x => x.EndUserAddressId);
 
             base.OnModelCreating(modelBuilder);
         }
@@ -39,6 +40,6 @@ namespace BouvetBackend.DataAccess
         public DbSet<Teams> Teams { get; set; }
         public DbSet<Achievement> Achievement { get; set; }
         public DbSet<UserAchievement> UserAchievement { get; set; }
-
+        public DbSet<EndUserAddress> EndUserAddress { get; set; }
     }
 }
