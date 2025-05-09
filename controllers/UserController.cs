@@ -99,8 +99,10 @@ namespace BouvetBackend.Controllers
             {
                 return NotFound("No users found.");
             }
-            
-            var leaderboard = users.Select(user => new
+            // Return only users with more then 0 in score
+            var leaderboard = users
+                .Where(user => user.TotalScore > 0)
+                .Select(user => new
             {
                 user.UserId,
                 user.NickName,
