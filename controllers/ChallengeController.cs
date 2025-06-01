@@ -55,7 +55,7 @@ namespace BouvetBackend.Controllers
             
             int totalGroups = 10;
             // cycleStart = startDate
-            DateTime cycleStart = new DateTime(2025, 3, 13);
+            DateTime cycleStart = new DateTime(2025, 5, 19);
             int weeksSinceStart = (int)((now - cycleStart).TotalDays / 7);
             int currentGroup = (weeksSinceStart % totalGroups) + 1;
             
