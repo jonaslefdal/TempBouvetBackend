@@ -186,7 +186,7 @@ namespace BouvetBackend.Repositories
             };
         }
 
-        private async Task AwardAchievement(int userId, Achievement achievement)
+        protected virtual async Task AwardAchievement(int userId, Achievement achievement)
         {
             var userAchievement = new UserAchievement
             {

@@ -3,7 +3,6 @@ using BouvetBackend.DataAccess;
 using BouvetBackend.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
-using Microsoft.IdentityModel.Tokens;
 using BouvetBackend.Services;
 using System.Text.Json.Serialization;
 
@@ -64,42 +63,31 @@ builder.Services.AddCors(options =>
 */
     var azureAdB2CConfig = builder.Configuration.GetSection("AzureAdB2C");
 
+    // Microsoft Idetity Web token validering
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAdB2C"));
+
+    /*builder.Services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+    {
+        options.Events = new JwtBearerEvents
         {
-            // Use configuration values
-            var instance = azureAdB2CConfig["Instance"];
-            var signUpSignInPolicyId = azureAdB2CConfig["SignUpSignInPolicyId"];
-            var domain = azureAdB2CConfig["Domain"];
-            var clientId = azureAdB2CConfig["ClientId"];
-            var validIssuer = azureAdB2CConfig["ValidIssuer"];
-
-            options.Authority = $"{instance}{domain}/{signUpSignInPolicyId}";
-            options.Audience = clientId;
-            options.TokenValidationParameters = new TokenValidationParameters
+            OnAuthenticationFailed = context =>
             {
-                ValidateIssuer = true,
-                ValidIssuer = validIssuer,
-                ValidateAudience = true,
-                ValidAudience = clientId,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true
-            };
-
-           /* options.Events = new JwtBearerEvents
+                Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
             {
-                OnAuthenticationFailed = context =>
-                {
-                    Console.WriteLine($"Authentication failed: {context.Exception.Message}");
-                    return Task.CompletedTask;
-                },
-                OnTokenValidated = context =>
-                {
-                    Console.WriteLine("Token successfully validated.");
-                    return Task.CompletedTask;
-                }
-            };*/
-        });
+                Console.WriteLine("Token successfully validated.");
+                return Task.CompletedTask;
+            },
+            OnMessageReceived = context =>
+            {
+                Console.WriteLine($"Token received: {context.Token}");
+                return Task.CompletedTask;
+            }
+        };
+    });*/
 
     builder.Services.AddAuthorization();
 

@@ -251,7 +251,7 @@ namespace BouvetBackend.Controllers
         {
             var costPerKm = new Dictionary<Methode, double>()
             {
-                { Methode.Car, 5.00 },      // 5 kr per km (drivstoff, vedlikehold, verdifall)
+                { Methode.Car, 2.50 },      // 5 kr per km (drivstoff, vedlikehold, verdifall)
                 { Methode.Bus, 1.19 },      // Basert på 711 kr/mnd og 600 km gjennomsnitt
                 { Methode.Cycling, 0.00 },  
                 { Methode.Walking, 0.00 }   
